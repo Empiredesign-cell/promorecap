@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>PromoPulse — Promo Performance Tracker</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;--panel:#fff;--panel2:#f8fafc;--text:#111827;--muted:#64748b;
+      --line:#e5e7eb;--brand:#2563eb;--brand2:#7c3aed;--ok:#16a34a;--warn:#d97706;
+      --bad:#dc2626;--shadow:0 20px 50px rgba(15,23,42,.08);--radius:18px;
+    }
+    [data-theme="dark"]{
+      --bg:#080c16;--panel:#0f172a;--panel2:#111c32;--text:#eef2ff;--muted:#94a3b8;
+      --line:#22314f;--brand:#60a5fa;--brand2:#a78bfa;--shadow:0 20px 50px rgba(0,0,0,.25);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .hidden{display:none!important}
+    .app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+    .sidebar{padding:24px 18px;border-right:1px solid var(--line);background:var(--panel);position:sticky;top:0;height:100vh}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+    .logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--brand2));display:grid;place-items:center;color:#fff;font-weight:900}
+    .brand b{font-size:18px}.brand small{display:block;color:var(--muted)}
+    .nav{display:grid;gap:8px}.nav button{display:flex;gap:10px;align-items:center;border:0;background:transparent;color:var(--muted);padding:12px 14px;border-radius:12px;text-align:left}
+    .nav button.active,.nav button:hover{background:var(--panel2);color:var(--text)}
+    .sidebar-bottom{position:absolute;left:18px;right:18px;bottom:20px;display:grid;gap:8px}
+    .main{padding:26px;min-width:0}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+    .title h1{font-size:28px;margin:0}.title p{margin:5px 0 0;color:var(--muted)}
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:10px 14px;border-radius:12px;font-weight:700}
+    .btn.primary{border:0;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff}
+    .btn.danger{color:var(--bad)}
+    .grid{display:grid;gap:16px}
+    .metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+    .metric .label{font-size:13px;color:var(--muted)}.metric .value{font-size:28px;font-weight:850;margin:8px 0}.metric .sub{font-size:12px;color:var(--muted)}
+    .two{grid-template-columns:1.35fr .65fr}.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    h2,h3{margin:0 0 14px}.muted{color:var(--muted)}
+    .section-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}
+    .filters{display:flex;gap:8px;flex-wrap:wrap}
+    input,select,textarea{width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:10px 12px;border-radius:11px;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--brand)}
+    table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{font-size:12px;color:var(--muted);font-weight:700}.table-wrap{overflow:auto}
+    .badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800;background:var(--panel2)}
+    .badge.won{color:var(--ok)}.badge.lost{color:var(--bad)}.badge.follow{color:var(--warn)}.badge.new{color:var(--brand)}
+    .progress{height:9px;background:var(--panel2);border-radius:99px;overflow:hidden}.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--brand2));border-radius:99px}
+    .promo-item{padding:13px 0;border-bottom:1px solid var(--line)}.promo-item:last-child{border:0}
+    .promo-top{display:flex;justify-content:space-between;gap:10px}.promo-name{font-weight:800}.promo-meta{font-size:12px;color:var(--muted);margin-top:3px}
+    .insight{border-left:4px solid var(--brand);background:var(--panel2);padding:12px 14px;border-radius:10px;margin-bottom:10px}
+    .insight.ok{border-color:var(--ok)}.insight.warn{border-color:var(--warn)}.insight.bad{border-color:var(--bad)}
+    .modal{position:fixed;inset:0;background:rgba(2,6,23,.65);display:grid;place-items:center;padding:18px;z-index:20}
+    .modal-card{width:min(760px,100%);max-height:92vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 30px 100px rgba(0,0,0,.35)}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}.field label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin:0 0 6px}
+    .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+    .login{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at top left,#1e3a8a 0,transparent 36%),radial-gradient(circle at bottom right,#5b21b6 0,transparent 35%),#080c16}
+    .login-card{width:min(420px,100%);background:rgba(15,23,42,.9);color:#fff;border:1px solid #24324e;border-radius:24px;padding:26px;box-shadow:0 30px 100px rgba(0,0,0,.35);backdrop-filter:blur(16px)}
+    .login-card input{background:#111c32;color:#fff;border-color:#2a3a59}.login-card .muted{color:#94a3b8}
+    .notice{font-size:12px;padding:10px 12px;border-radius:10px;background:rgba(37,99,235,.12);color:#93c5fd;margin:12px 0}
+    .kpi-bar{display:grid;grid-template-columns:90px 1fr 58px;gap:8px;align-items:center;margin:12px 0;font-size:13px}
+    .empty{text-align:center;color:var(--muted);padding:30px}
+    .mobile-menu{display:none}
+    @media(max-width:980px){.app{grid-template-columns:1fr}.sidebar{display:none}.metrics{grid-template-columns:1fr 1fr}.two,.three{grid-template-columns:1fr}.mobile-menu{display:inline-flex}}
+    @media(max-width:620px){.main{padding:16px}.metrics{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.title h1{font-size:23px}.topbar{align-items:flex-start}.toolbar{justify-content:flex-end}th,td{white-space:nowrap}}
+  </style>
+</head>
+<body>
+
+<section id="loginScreen" class="login">
+  <div class="login-card">
+    <div class="brand">
+      <div class="logo">P</div>
+      <div><b>PromoPulse</b><small>Promo Performance Tracker</small></div>
+    </div>
+    <h2>Masuk Dashboard</h2>
+    <p class="muted">Pantau lead, closing, omzet, conversion rate dan efektivitas promo.</p>
+    <div id="demoNotice" class="notice hidden">Firebase belum dikonfigurasi. Aplikasi berjalan dalam <b>Demo Mode</b> menggunakan localStorage browser.</div>
+    <div class="field"><label>Email</label><input id="loginEmail" type="email" placeholder="admin@perusahaan.com"></div>
+    <div class="field" style="margin-top:12px"><label>Password</label><input id="loginPassword" type="password" placeholder="••••••••"></div>
+    <button id="loginBtn" class="btn primary" style="width:100%;margin-top:16px">Masuk</button>
+    <button id="demoBtn" class="btn hidden" style="width:100%;margin-top:10px">Masuk Demo</button>
+    <p id="loginError" style="color:#fca5a5;font-size:12px"></p>
+  </div>
+</section>
+
+<div id="appScreen" class="app hidden">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">P</div><div><b>PromoPulse</b><small>Marketing Intelligence</small></div></div>
+    <nav class="nav">
+      <button class="active" data-view="dashboard">▦ Dashboard</button>
+      <button data-view="promos">◈ Semua Promo</button>
+      <button data-view="leads">◎ Lead & Closing</button>
+      <button data-view="reports">↗ Analisis Bulanan</button>
+    </nav>
+    <div class="sidebar-bottom">
+      <button id="themeBtn" class="btn">◐ Dark / Light</button>
+      <button id="logoutBtn" class="btn danger">Keluar</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="title">
+        <h1 id="pageTitle">Dashboard Promo</h1>
+        <p id="pageSubtitle">Ringkasan performa campaign dan closing.</p>
+      </div>
+      <div class="toolbar">
+        <select id="monthFilter" style="width:auto"></select>
+        <button id="addPromoBtn" class="btn">+ Promo</button>
+        <button id="addLeadBtn" class="btn primary">+ Lead / Closing</button>
+      </div>
+    </div>
+
+    <section id="dashboardView" class="view">
+      <div class="grid metrics">
+        <div class="card metric"><div class="label">Total Lead</div><div id="mLeads" class="value">0</div><div class="sub">Semua prospek promo</div></div>
+        <div class="card metric"><div class="label">Closing</div><div id="mClosing" class="value">0</div><div class="sub">Status berhasil</div></div>
+        <div class="card metric"><div class="label">Conversion Rate</div><div id="mConversion" class="value">0%</div><div class="sub">Closing ÷ total lead</div></div>
+        <div class="card metric"><div class="label">Omzet Promo</div><div id="mRevenue" class="value">Rp0</div><div class="sub">Nilai order dari closing</div></div>
+      </div>
+
+      <div class="grid two">
+        <div class="card">
+          <div class="section-head"><div><h3>Performa Promo</h3><div class="muted" style="font-size:12px">Ranking berdasarkan skor efektivitas</div></div></div>
+          <div id="promoPerformance"></div>
+        </div>
+        <div class="card">
+          <h3>AI-style Insight</h3>
+          <div id="insights"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="section-head"><h3>Closing Terbaru</h3><button class="btn" onclick="setView('leads')">Lihat Semua</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Customer</th><th>Promo</th><th>Sales</th><th>Nilai</th></tr></thead><tbody id="recentClosings"></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="promosView" class="view hidden">
+      <div class="card">
+        <div class="section-head"><div><h3>Semua Promo</h3><div class="muted" style="font-size:12px">Budget, target, conversion dan ROI.</div></div></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Promo</th><th>Periode</th><th>Lead</th><th>Closing</th><th>Conv.</th><th>Omzet</th><th>Biaya</th><th>ROI</th><th>Status</th><th></th></tr></thead>
+          <tbody id="promoTable"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="leadsView" class="view hidden">
+      <div class="card">
+        <div class="section-head">
+          <div><h3>Lead & Closing</h3><div class="muted" style="font-size:12px">Catat semua lead, bukan hanya yang closing.</div></div>
+          <div class="filters"><select id="statusFilter" style="width:auto"><option value="">Semua Status</option><option>Baru</option><option>Follow Up</option><option>Closing</option><option>Lost</option></select></div>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tanggal</th><th>Customer</th><th>Kontak</th><th>Promo</th><th>Sales</th><th>Status</th><th>Order</th><th>Catatan</th><th></th></tr></thead>
+          <tbody id="leadTable"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="reportsView" class="view hidden">
+      <div class="grid three">
+        <div class="card metric"><div class="label">Biaya Promo</div><div id="rCost" class="value">Rp0</div><div class="sub">Total cost campaign</div></div>
+        <div class="card metric"><div class="label">ROI</div><div id="rROI" class="value">0%</div><div class="sub">(Omzet - biaya) ÷ biaya</div></div>
+        <div class="card metric"><div class="label">Target Tercapai</div><div id="rTarget" class="value">0%</div><div class="sub">Closing ÷ target closing</div></div>
+      </div>
+      <div class="grid two">
+        <div class="card"><h3>Funnel Promo</h3><div id="funnel"></div></div>
+        <div class="card"><h3>Rekomendasi Bulanan</h3><div id="monthlyRecommendations"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="promoModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="section-head"><h2 id="promoModalTitle">Tambah Promo</h2><button class="btn" onclick="closeModal('promoModal')">✕</button></div>
+    <form id="promoForm" class="form-grid">
+      <input type="hidden" id="promoId">
+      <div class="field full"><label>Nama Promo</label><input id="promoName" required placeholder="Promo Brosur September"></div>
+      <div class="field"><label>Produk</label><input id="promoProduct" required placeholder="Brosur A5"></div>
+      <div class="field"><label>Channel</label><select id="promoChannel"><option>WhatsApp</option><option>Instagram</option><option>TikTok</option><option>Walk-in</option><option>Sales</option><option>Multi-channel</option></select></div>
+      <div class="field"><label>Tanggal Mulai</label><input id="promoStart" type="date" required></div>
+      <div class="field"><label>Tanggal Selesai</label><input id="promoEnd" type="date" required></div>
+      <div class="field"><label>Target Closing</label><input id="promoTarget" type="number" min="0" value="10"></div>
+      <div class="field"><label>Biaya Promo / Campaign (Rp)</label><input id="promoCost" type="number" min="0" value="0"></div>
+      <div class="field full"><label>Penawaran</label><textarea id="promoOffer" rows="3" placeholder="Cetak 100 lembar harga promo..."></textarea></div>
+      <div class="actions full"><button type="button" class="btn" onclick="closeModal('promoModal')">Batal</button><button class="btn primary">Simpan Promo</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="leadModal" class="modal hidden">
+  <div class="modal-card">
+    <div class="section-head"><h2 id="leadModalTitle">Tambah Lead</h2><button class="btn" onclick="closeModal('leadModal')">✕</button></div>
+    <form id="leadForm" class="form-grid">
+      <input type="hidden" id="leadId">
+      <div class="field"><label>Tanggal</label><input id="leadDate" type="date" required></div>
+      <div class="field"><label>Promo</label><select id="leadPromo" required></select></div>
+      <div class="field"><label>Nama Customer</label><input id="leadCustomer" required placeholder="PT / Nama customer"></div>
+      <div class="field"><label>No. WA / Kontak</label><input id="leadContact" placeholder="08xxxxxxxxxx"></div>
+      <div class="field"><label>Sales / PIC</label><input id="leadSales" placeholder="Nama sales"></div>
+      <div class="field"><label>Sumber Lead</label><select id="leadSource"><option>WhatsApp Story</option><option>WhatsApp Chat</option><option>Instagram</option><option>TikTok</option><option>Google Maps</option><option>Walk-in</option><option>Referral</option><option>Sales Outreach</option><option>Lainnya</option></select></div>
+      <div class="field"><label>Status</label><select id="leadStatus"><option>Baru</option><option>Follow Up</option><option>Closing</option><option>Lost</option></select></div>
+      <div class="field"><label>Nilai Order (Rp)</label><input id="leadValue" type="number" min="0" value="0"></div>
+      <div class="field full"><label>Catatan</label><textarea id="leadNotes" rows="3" placeholder="Kebutuhan, alasan lost, follow-up berikutnya, dll"></textarea></div>
+      <div class="actions full"><button type="button" class="btn" onclick="closeModal('leadModal')">Batal</button><button class="btn primary">Simpan Lead</button></div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
+  import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+  // =========================================================
+  // 1) GANTI CONFIG INI DENGAN CONFIG FIREBASE PROJECT KAMU
+  // =========================================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyAC9GHlF2q9emTN0BjQ1MfddFBwDYU1d-c",
+    authDomain: "promorecap.firebaseapp.com",
+    projectId: "promorecap",
+    storageBucket: "promorecap.firebasestorage.app",
+    messagingSenderId: "106400655795",
+    appId: "1:106400655795:web:67f883058cec4776f283c6",
+    measurementId: "G-9F48YS2PBZ"
+  };
+
+  const firebaseReady = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
+  let db = null, auth = null;
+  let promos = [], leads = [];
+  let unsubPromos = null, unsubLeads = null;
+  let demoMode = !firebaseReady;
+
+  const $ = id => document.getElementById(id);
+  const money = n => new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n||0));
+  const pct = n => `${Number(n||0).toFixed(1)}%`;
+  const esc = s => String(s ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  const today = () => new Date().toISOString().slice(0,10);
+  const monthKey = d => (d||'').slice(0,7);
+
+  function seedDemo(){
+    if(localStorage.getItem('pp_promos')) return;
+    const y = new Date().getFullYear(), m = String(new Date().getMonth()+1).padStart(2,'0');
+    const p = [{id:'demo1',name:'Promo Brosur September',product:'Brosur',channel:'WhatsApp',startDate:`${y}-${m}-01`,endDate:`${y}-${m}-30`,targetClosing:20,cost:500000,offer:'Cetak 100 lembar harga promo'}];
+    const l = [
+      {id:'l1',date:`${y}-${m}-01`,promoId:'demo1',customer:'Kedai Nusantara',contact:'0812xxxx',sales:'Nayla',source:'WhatsApp Story',status:'Closing',value:850000,notes:'Cetak brosur A5'},
+      {id:'l2',date:`${y}-${m}-01`,promoId:'demo1',customer:'CV Maju',contact:'0813xxxx',sales:'Pinkan',source:'Instagram',status:'Follow Up',value:0,notes:'Minta penawaran 500 lbr'},
+      {id:'l3',date:`${y}-${m}-02`,promoId:'demo1',customer:'Toko Sinar',contact:'0821xxxx',sales:'Nabilah',source:'WhatsApp Chat',status:'Lost',value:0,notes:'Harga belum cocok'},
+      {id:'l4',date:`${y}-${m}-02`,promoId:'demo1',customer:'Kopi Barat',contact:'0857xxxx',sales:'Nayla',source:'Referral',status:'Closing',value:1200000,notes:'Brosur + menu'}
+    ];
+    localStorage.setItem('pp_promos',JSON.stringify(p)); localStorage.setItem('pp_leads',JSON.stringify(l));
+  }
+  function loadDemo(){
+    seedDemo();
+    promos=JSON.parse(localStorage.getItem('pp_promos')||'[]');
+    leads=JSON.parse(localStorage.getItem('pp_leads')||'[]');
+    renderAll();
+  }
+  function saveDemo(){ localStorage.setItem('pp_promos',JSON.stringify(promos)); localStorage.setItem('pp_leads',JSON.stringify(leads)); renderAll(); }
+
+  function currentMonth(){ return $('monthFilter').value || 'all'; }
+  function filteredLeads(){
+    const m=currentMonth(); return m==='all'?leads:leads.filter(x=>monthKey(x.date)===m);
+  }
+  function filteredPromos(){
+    const m=currentMonth(); if(m==='all')return promos;
+    return promos.filter(p => monthKey(p.startDate)===m || monthKey(p.endDate)===m || (p.startDate<=`${m}-31` && p.endDate>=`${m}-01`));
+  }
+  function calcPromo(p){
+    const ls=leads.filter(x=>x.promoId===p.id);
+    const won=ls.filter(x=>x.status==='Closing');
+    const revenue=won.reduce((a,b)=>a+Number(b.value||0),0);
+    const conv=ls.length?won.length/ls.length*100:0;
+    const cost=Number(p.cost||0);
+    const roi=cost?((revenue-cost)/cost)*100:(revenue>0?999:0);
+    const target=Number(p.targetClosing||0);
+    const targetRate=target?won.length/target*100:0;
+    const score=Math.max(0,Math.min(100,conv*.45 + Math.min(targetRate,100)*.35 + Math.min(Math.max(roi,0),200)/2*.20));
+    return {leadCount:ls.length,wonCount:won.length,revenue,conv,cost,roi,targetRate,score};
+  }
+  function effectiveLabel(k){
+    if(k.leadCount<5)return ['Data minim','follow'];
+    if(k.roi>=100 && k.conv>=20)return ['Sangat efektif','won'];
+    if(k.roi>=0 && k.conv>=10)return ['Cukup efektif','new'];
+    return ['Perlu evaluasi','lost'];
+  }
+
+  function fillMonthFilter(){
+    const existing=$('monthFilter').value;
+    const months=[...new Set([...promos.flatMap(p=>[monthKey(p.startDate),monthKey(p.endDate)]),...leads.map(l=>monthKey(l.date))].filter(Boolean))].sort().reverse();
+    $('monthFilter').innerHTML='<option value="all">Semua Bulan</option>'+months.map(m=>`<option value="${m}">${new Date(m+'-01').toLocaleDateString('id-ID',{month:'long',year:'numeric'})}</option>`).join('');
+    if([...$('monthFilter').options].some(o=>o.value===existing)) $('monthFilter').value=existing;
+    else if(months[0]) $('monthFilter').value=months[0];
+  }
+
+  function renderDashboard(){
+    const ls=filteredLeads(), ps=filteredPromos(), won=ls.filter(x=>x.status==='Closing');
+    const revenue=won.reduce((a,b)=>a+Number(b.value||0),0), conv=ls.length?won.length/ls.length*100:0;
+    $('mLeads').textContent=ls.length; $('mClosing').textContent=won.length; $('mConversion').textContent=pct(conv); $('mRevenue').textContent=money(revenue);
+
+    const ranked=ps.map(p=>({p,k:calcPromo(p)})).sort((a,b)=>b.k.score-a.k.score);
+    $('promoPerformance').innerHTML=ranked.length?ranked.map(({p,k})=>{
+      const [label,cls]=effectiveLabel(k);
+      return `<div class="promo-item"><div class="promo-top"><div><div class="promo-name">${esc(p.name)}</div><div class="promo-meta">${k.wonCount}/${k.leadCount} closing • ${money(k.revenue)} • ROI ${k.cost?pct(k.roi):'n/a'}</div></div><span class="badge ${cls}">${label}</span></div><div class="progress" style="margin-top:10px"><span style="width:${Math.max(4,k.score)}%"></span></div></div>`
+    }).join(''):'<div class="empty">Belum ada promo pada periode ini.</div>';
+
+    const ins=[];
+    if(ls.length<10) ins.push(['warn','Data belum cukup kuat','Minimal 10–20 lead per promo akan membuat evaluasi conversion rate lebih bermakna.']);
+    if(conv>=25) ins.push(['ok','Conversion rate kuat',`Conversion ${pct(conv)}. Pertahankan channel dan penawaran yang menghasilkan closing.`]);
+    else if(ls.length) ins.push(['bad','Conversion perlu diperbaiki',`Conversion baru ${pct(conv)}. Audit kualitas lead, follow-up, harga dan penawaran.`]);
+    const lost=ls.filter(x=>x.status==='Lost').length;
+    if(lost) ins.push(['warn','Lost lead perlu dibaca',`${lost} lead lost. Isi alasan lost di catatan agar promo berikutnya tidak mengulang masalah yang sama.`]);
+    if(ranked[0]?.k.score>=50) ins.push(['ok','Promo terbaik periode ini',`${ranked[0].p.name} memiliki skor efektivitas tertinggi (${ranked[0].k.score.toFixed(0)}/100). Layak diuji ulang atau dinaikkan skalanya.`]);
+    $('insights').innerHTML=ins.map(i=>`<div class="insight ${i[0]}"><b>${i[1]}</b><div class="muted" style="font-size:12px;margin-top:4px">${i[2]}</div></div>`).join('');
+
+    const latest=[...won].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
+    $('recentClosings').innerHTML=latest.length?latest.map(l=>`<tr><td>${l.date}</td><td><b>${esc(l.customer)}</b></td><td>${esc(promos.find(p=>p.id===l.promoId)?.name||'-')}</td><td>${esc(l.sales||'-')}</td><td><b>${money(l.value)}</b></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Belum ada closing.</td></tr>';
+  }
+
+  function renderPromos(){
+    const ps=filteredPromos();
+    $('promoTable').innerHTML=ps.length?ps.map(p=>{
+      const k=calcPromo(p), [label,cls]=effectiveLabel(k);
+      return `<tr><td><b>${esc(p.name)}</b><div class="muted">${esc(p.product||'')}</div></td><td>${p.startDate}<br>${p.endDate}</td><td>${k.leadCount}</td><td>${k.wonCount}</td><td>${pct(k.conv)}</td><td>${money(k.revenue)}</td><td>${money(k.cost)}</td><td>${k.cost?pct(k.roi):'-'}</td><td><span class="badge ${cls}">${label}</span></td><td><button class="btn" onclick="editPromo('${p.id}')">Edit</button> <button class="btn danger" onclick="removePromo('${p.id}')">Hapus</button></td></tr>`
+    }).join(''):'<tr><td colspan="10" class="empty">Belum ada data promo.</td></tr>';
+  }
+
+  function renderLeads(){
+    const sf=$('statusFilter').value; let ls=filteredLeads(); if(sf)ls=ls.filter(x=>x.status===sf);
+    ls=[...ls].sort((a,b)=>b.date.localeCompare(a.date));
+    const cls=s=>s==='Closing'?'won':s==='Lost'?'lost':s==='Follow Up'?'follow':'new';
+    $('leadTable').innerHTML=ls.length?ls.map(l=>`<tr><td>${l.date}</td><td><b>${esc(l.customer)}</b><div class="muted">${esc(l.source||'')}</div></td><td>${esc(l.contact||'-')}</td><td>${esc(promos.find(p=>p.id===l.promoId)?.name||'-')}</td><td>${esc(l.sales||'-')}</td><td><span class="badge ${cls(l.status)}">${esc(l.status)}</span></td><td>${l.status==='Closing'?money(l.value):'-'}</td><td>${esc(l.notes||'-')}</td><td><button class="btn" onclick="editLead('${l.id}')">Edit</button> <button class="btn danger" onclick="removeLead('${l.id}')">Hapus</button></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Belum ada lead pada filter ini.</td></tr>';
+  }
+
+  function renderReports(){
+    const ls=filteredLeads(), ps=filteredPromos(), won=ls.filter(x=>x.status==='Closing'), revenue=won.reduce((a,b)=>a+Number(b.value||0),0);
+    const cost=ps.reduce((a,p)=>a+Number(p.cost||0),0), roi=cost?((revenue-cost)/cost)*100:0;
+    const target=ps.reduce((a,p)=>a+Number(p.targetClosing||0),0), targetRate=target?won.length/target*100:0;
+    $('rCost').textContent=money(cost); $('rROI').textContent=pct(roi); $('rTarget').textContent=pct(targetRate);
+    const counts={Baru:0,'Follow Up':0,Closing:0,Lost:0}; ls.forEach(l=>counts[l.status]=(counts[l.status]||0)+1);
+    const max=Math.max(1,...Object.values(counts));
+    $('funnel').innerHTML=Object.entries(counts).map(([k,v])=>`<div class="kpi-bar"><span>${k}</span><div class="progress"><span style="width:${v/max*100}%"></span></div><b>${v}</b></div>`).join('');
+
+    const rec=[];
+    if(!ls.length)rec.push('Mulai dengan mencatat setiap inquiry/lead yang masuk dari promo.');
+    if(ls.length && won.length/ls.length<.1)rec.push('Conversion di bawah 10%: jangan buru-buru tambah budget. Perbaiki offer, target audience, respon sales, dan follow-up.');
+    if(cost && roi<0)rec.push('ROI negatif: hentikan scaling promo sampai penyebab biaya tinggi atau omzet rendah ditemukan.');
+    if(targetRate>=100)rec.push('Target closing tercapai. Uji scale-up bertahap 20–30%, bukan langsung menggandakan budget.');
+    const lostNotes=ls.filter(l=>l.status==='Lost'&&l.notes).length;
+    if(ls.filter(l=>l.status==='Lost').length>lostNotes)rec.push('Sebagian lead Lost belum memiliki alasan. Wajib isi alasan lost agar laporan berikutnya menghasilkan insight yang bisa ditindaklanjuti.');
+    if(!rec.length)rec.push('Data relatif sehat. Fokus berikutnya: bandingkan channel, salesperson, nilai order rata-rata, dan repeat order.');
+    $('monthlyRecommendations').innerHTML=rec.map((x,i)=>`<div class="insight ${i===0?'ok':''}"><b>Rekomendasi ${i+1}</b><div class="muted" style="font-size:12px;margin-top:4px">${x}</div></div>`).join('');
+  }
+
+  function fillPromoSelect(){
+    $('leadPromo').innerHTML=promos.length?promos.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join(''):'<option value="">Buat promo terlebih dahulu</option>';
+  }
+  function renderAll(){ fillMonthFilter(); fillPromoSelect(); renderDashboard(); renderPromos(); renderLeads(); renderReports(); }
+
+  async function initFirebase(){
+    const app=initializeApp(firebaseConfig); db=getFirestore(app); auth=getAuth(app);
+    isSupported().then(ok => { if (ok) getAnalytics(app); }).catch(() => {});
+    onAuthStateChanged(auth,user=>{ if(user){ showApp(); subscribeFirestore(); } else showLogin(); });
+  }
+  function subscribeFirestore(){
+    if(unsubPromos)unsubPromos(); if(unsubLeads)unsubLeads();
+    unsubPromos=onSnapshot(collection(db,'promos'),snap=>{promos=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();});
+    unsubLeads=onSnapshot(collection(db,'promoLeads'),snap=>{leads=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();});
+  }
+
+  function showLogin(){ $('loginScreen').classList.remove('hidden'); $('appScreen').classList.add('hidden'); if(demoMode){$('demoNotice').classList.remove('hidden');$('demoBtn').classList.remove('hidden');$('loginBtn').classList.add('hidden');$('loginEmail').parentElement.classList.add('hidden');$('loginPassword').parentElement.classList.add('hidden');} }
+  function showApp(){ $('loginScreen').classList.add('hidden'); $('appScreen').classList.remove('hidden'); }
+
+  $('loginBtn').onclick=async()=>{ try{$('loginError').textContent='';await signInWithEmailAndPassword(auth,$('loginEmail').value,$('loginPassword').value)}catch(e){$('loginError').textContent='Login gagal: '+e.message} };
+  $('demoBtn').onclick=()=>{showApp();loadDemo()};
+  $('logoutBtn').onclick=async()=>{if(demoMode){showLogin()}else await signOut(auth)};
+  $('themeBtn').onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'':'dark';localStorage.setItem('pp_theme',document.documentElement.dataset.theme)};
+  document.documentElement.dataset.theme=localStorage.getItem('pp_theme')||'';
+
+  window.closeModal=id=>$(id).classList.add('hidden');
+  $('addPromoBtn').onclick=()=>{ $('promoForm').reset();$('promoId').value='';$('promoStart').value=today();$('promoEnd').value=today();$('promoTarget').value=10;$('promoCost').value=0;$('promoModalTitle').textContent='Tambah Promo';$('promoModal').classList.remove('hidden'); };
+  $('addLeadBtn').onclick=()=>{ $('leadForm').reset();$('leadId').value='';$('leadDate').value=today();$('leadValue').value=0;$('leadModalTitle').textContent='Tambah Lead / Closing';fillPromoSelect();$('leadModal').classList.remove('hidden'); };
+
+  $('promoForm').onsubmit=async e=>{
+    e.preventDefault();
+    const data={name:$('promoName').value.trim(),product:$('promoProduct').value.trim(),channel:$('promoChannel').value,startDate:$('promoStart').value,endDate:$('promoEnd').value,targetClosing:Number($('promoTarget').value||0),cost:Number($('promoCost').value||0),offer:$('promoOffer').value.trim(),updatedAt:demoMode?Date.now():serverTimestamp()};
+    const id=$('promoId').value;
+    if(demoMode){ if(id){promos=promos.map(p=>p.id===id?{...p,...data}:p)}else promos.push({id:'p'+Date.now(),...data});saveDemo();}
+    else { if(id)await updateDoc(doc(db,'promos',id),data); else await addDoc(collection(db,'promos'),{...data,createdAt:serverTimestamp()}); }
+    closeModal('promoModal');
+  };
+  $('leadForm').onsubmit=async e=>{
+    e.preventDefault();
+    const data={date:$('leadDate').value,promoId:$('leadPromo').value,customer:$('leadCustomer').value.trim(),contact:$('leadContact').value.trim(),sales:$('leadSales').value.trim(),source:$('leadSource').value,status:$('leadStatus').value,value:Number($('leadValue').value||0),notes:$('leadNotes').value.trim(),updatedAt:demoMode?Date.now():serverTimestamp()};
+    const id=$('leadId').value;
+    if(demoMode){if(id){leads=leads.map(l=>l.id===id?{...l,...data}:l)}else leads.push({id:'l'+Date.now(),...data});saveDemo();}
+    else {if(id)await updateDoc(doc(db,'promoLeads',id),data);else await addDoc(collection(db,'promoLeads'),{...data,createdAt:serverTimestamp()});}
+    closeModal('leadModal');
+  };
+
+  window.editPromo=id=>{const p=promos.find(x=>x.id===id);if(!p)return;$('promoId').value=id;$('promoName').value=p.name||'';$('promoProduct').value=p.product||'';$('promoChannel').value=p.channel||'WhatsApp';$('promoStart').value=p.startDate||'';$('promoEnd').value=p.endDate||'';$('promoTarget').value=p.targetClosing||0;$('promoCost').value=p.cost||0;$('promoOffer').value=p.offer||'';$('promoModalTitle').textContent='Edit Promo';$('promoModal').classList.remove('hidden')};
+  window.editLead=id=>{const l=leads.find(x=>x.id===id);if(!l)return;fillPromoSelect();$('leadId').value=id;$('leadDate').value=l.date||'';$('leadPromo').value=l.promoId||'';$('leadCustomer').value=l.customer||'';$('leadContact').value=l.contact||'';$('leadSales').value=l.sales||'';$('leadSource').value=l.source||'WhatsApp Story';$('leadStatus').value=l.status||'Baru';$('leadValue').value=l.value||0;$('leadNotes').value=l.notes||'';$('leadModalTitle').textContent='Edit Lead';$('leadModal').classList.remove('hidden')};
+  window.removePromo=async id=>{if(!confirm('Hapus promo ini? Lead terkait tidak otomatis dihapus.'))return;if(demoMode){promos=promos.filter(p=>p.id!==id);saveDemo()}else await deleteDoc(doc(db,'promos',id))};
+  window.removeLead=async id=>{if(!confirm('Hapus lead ini?'))return;if(demoMode){leads=leads.filter(l=>l.id!==id);saveDemo()}else await deleteDoc(doc(db,'promoLeads',id))};
+
+  const viewMeta={dashboard:['Dashboard Promo','Ringkasan performa campaign dan closing.'],promos:['Semua Promo','Kelola campaign dan lihat efektivitasnya.'],leads:['Lead & Closing','Pantau perjalanan prospek sampai closing atau lost.'],reports:['Analisis Bulanan','Evaluasi conversion, ROI, target dan rekomendasi.']};
+  window.setView=v=>{document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(v+'View').classList.remove('hidden');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));$('pageTitle').textContent=viewMeta[v][0];$('pageSubtitle').textContent=viewMeta[v][1]};
+  document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+  $('monthFilter').onchange=()=>{renderDashboard();renderPromos();renderLeads();renderReports()};
+  $('statusFilter').onchange=renderLeads;
+
+  if(firebaseReady){ demoMode=false; initFirebase(); } else { demoMode=true; showLogin(); }
+</script>
+</body>
+</html>
