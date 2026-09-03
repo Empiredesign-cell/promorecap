@@ -137,7 +137,7 @@
 
       <div class="card" style="margin-top:16px">
         <div class="section-head"><h3>Closing Terbaru</h3><button class="btn" onclick="setView('leads')">Lihat Semua</button></div>
-        <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Customer</th><th>Promo</th><th>Sales</th><th>Nilai</th></tr></thead><tbody id="recentClosings"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Kode Invoice</th><th>Customer</th><th>Promo</th><th>Sales</th><th>Nilai</th></tr></thead><tbody id="recentClosings"></tbody></table></div>
       </div>
     </section>
 
@@ -158,7 +158,7 @@
           <div class="filters"><select id="statusFilter" style="width:auto"><option value="">Semua Status</option><option>Baru</option><option>Follow Up</option><option>Closing</option><option>Lost</option></select></div>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>Tanggal</th><th>Customer</th><th>Kontak</th><th>Promo</th><th>Sales</th><th>Status</th><th>Order</th><th>Catatan</th><th></th></tr></thead>
+          <thead><tr><th>Tanggal</th><th>Kode Invoice</th><th>Customer</th><th>Kontak</th><th>Promo</th><th>Sales</th><th>Status</th><th>Order</th><th>Catatan</th><th></th></tr></thead>
           <tbody id="leadTable"></tbody>
         </table></div>
       </div>
@@ -205,7 +205,21 @@
       <div class="field"><label>Promo</label><select id="leadPromo" required></select></div>
       <div class="field"><label>Nama Customer</label><input id="leadCustomer" required placeholder="PT / Nama customer"></div>
       <div class="field"><label>No. WA / Kontak</label><input id="leadContact" placeholder="08xxxxxxxxxx"></div>
-      <div class="field"><label>Sales / PIC</label><input id="leadSales" placeholder="Nama sales"></div>
+      <div class="field"><label id="invoiceLabel">Kode Invoice <span class="muted">(wajib saat Closing)</span></label><input id="leadInvoice" placeholder="Contoh: CG260903001"></div>
+      <div class="field"><label>Sales / PIC</label><select id="leadSales" required>
+        <option value="">Pilih Sales / PIC</option>
+        <option value="Muhammad Angga Nugraha">Muhammad Angga Nugraha</option>
+        <option value="Nayla Reva Mutiara">Nayla Reva Mutiara</option>
+        <option value="Nabilah Nurul Rahmadhaniyanti">Nabilah Nurul Rahmadhaniyanti</option>
+        <option value="Epri Liyanto">Epri Liyanto</option>
+        <option value="Muis Ramadhan">Muis Ramadhan</option>
+        <option value="Ramdani">Ramdani</option>
+        <option value="Sri Bulan Cahyani">Sri Bulan Cahyani</option>
+        <option value="Pinkan Julian Salsabilla">Pinkan Julian Salsabilla</option>
+        <option value="Maulidya Hanifah Sitepu">Maulidya Hanifah Sitepu</option>
+        <option value="Annisa Ramadhani Santosa">Annisa Ramadhani Santosa</option>
+        <option value="Muhammad Daffa Ramadhiansyah">Muhammad Daffa Ramadhiansyah</option>
+      </select></div>
       <div class="field"><label>Sumber Lead</label><select id="leadSource"><option>WhatsApp Story</option><option>WhatsApp Chat</option><option>Instagram</option><option>TikTok</option><option>Google Maps</option><option>Walk-in</option><option>Referral</option><option>Sales Outreach</option><option>Lainnya</option></select></div>
       <div class="field"><label>Status</label><select id="leadStatus"><option>Baru</option><option>Follow Up</option><option>Closing</option><option>Lost</option></select></div>
       <div class="field"><label>Nilai Order (Rp)</label><input id="leadValue" type="number" min="0" value="0"></div>
@@ -252,10 +266,10 @@
     const y = new Date().getFullYear(), m = String(new Date().getMonth()+1).padStart(2,'0');
     const p = [{id:'demo1',name:'Promo Brosur September',product:'Brosur',channel:'WhatsApp',startDate:`${y}-${m}-01`,endDate:`${y}-${m}-30`,targetClosing:20,cost:500000,offer:'Cetak 100 lembar harga promo'}];
     const l = [
-      {id:'l1',date:`${y}-${m}-01`,promoId:'demo1',customer:'Kedai Nusantara',contact:'0812xxxx',sales:'Nayla',source:'WhatsApp Story',status:'Closing',value:850000,notes:'Cetak brosur A5'},
-      {id:'l2',date:`${y}-${m}-01`,promoId:'demo1',customer:'CV Maju',contact:'0813xxxx',sales:'Pinkan',source:'Instagram',status:'Follow Up',value:0,notes:'Minta penawaran 500 lbr'},
-      {id:'l3',date:`${y}-${m}-02`,promoId:'demo1',customer:'Toko Sinar',contact:'0821xxxx',sales:'Nabilah',source:'WhatsApp Chat',status:'Lost',value:0,notes:'Harga belum cocok'},
-      {id:'l4',date:`${y}-${m}-02`,promoId:'demo1',customer:'Kopi Barat',contact:'0857xxxx',sales:'Nayla',source:'Referral',status:'Closing',value:1200000,notes:'Brosur + menu'}
+      {id:'l1',date:`${y}-${m}-01`,promoId:'demo1',invoiceCode:'CG-DEMO-001',customer:'Kedai Nusantara',contact:'0812xxxx',sales:'Nayla Reva Mutiara',source:'WhatsApp Story',status:'Closing',value:850000,notes:'Cetak brosur A5'},
+      {id:'l2',date:`${y}-${m}-01`,promoId:'demo1',invoiceCode:'',customer:'CV Maju',contact:'0813xxxx',sales:'Pinkan Julian Salsabilla',source:'Instagram',status:'Follow Up',value:0,notes:'Minta penawaran 500 lbr'},
+      {id:'l3',date:`${y}-${m}-02`,promoId:'demo1',invoiceCode:'',customer:'Toko Sinar',contact:'0821xxxx',sales:'Nabilah Nurul Rahmadhaniyanti',source:'WhatsApp Chat',status:'Lost',value:0,notes:'Harga belum cocok'},
+      {id:'l4',date:`${y}-${m}-02`,promoId:'demo1',invoiceCode:'CG-DEMO-002',customer:'Kopi Barat',contact:'0857xxxx',sales:'Nayla Reva Mutiara',source:'Referral',status:'Closing',value:1200000,notes:'Brosur + menu'}
     ];
     localStorage.setItem('pp_promos',JSON.stringify(p)); localStorage.setItem('pp_leads',JSON.stringify(l));
   }
@@ -323,7 +337,7 @@
     $('insights').innerHTML=ins.map(i=>`<div class="insight ${i[0]}"><b>${i[1]}</b><div class="muted" style="font-size:12px;margin-top:4px">${i[2]}</div></div>`).join('');
 
     const latest=[...won].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
-    $('recentClosings').innerHTML=latest.length?latest.map(l=>`<tr><td>${l.date}</td><td><b>${esc(l.customer)}</b></td><td>${esc(promos.find(p=>p.id===l.promoId)?.name||'-')}</td><td>${esc(l.sales||'-')}</td><td><b>${money(l.value)}</b></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Belum ada closing.</td></tr>';
+    $('recentClosings').innerHTML=latest.length?latest.map(l=>`<tr><td>${l.date}</td><td><b>${esc(l.invoiceCode||'-')}</b></td><td><b>${esc(l.customer)}</b></td><td>${esc(promos.find(p=>p.id===l.promoId)?.name||'-')}</td><td>${esc(l.sales||'-')}</td><td><b>${money(l.value)}</b></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada closing.</td></tr>';
   }
 
   function renderPromos(){
@@ -338,7 +352,7 @@
     const sf=$('statusFilter').value; let ls=filteredLeads(); if(sf)ls=ls.filter(x=>x.status===sf);
     ls=[...ls].sort((a,b)=>b.date.localeCompare(a.date));
     const cls=s=>s==='Closing'?'won':s==='Lost'?'lost':s==='Follow Up'?'follow':'new';
-    $('leadTable').innerHTML=ls.length?ls.map(l=>`<tr><td>${l.date}</td><td><b>${esc(l.customer)}</b><div class="muted">${esc(l.source||'')}</div></td><td>${esc(l.contact||'-')}</td><td>${esc(promos.find(p=>p.id===l.promoId)?.name||'-')}</td><td>${esc(l.sales||'-')}</td><td><span class="badge ${cls(l.status)}">${esc(l.status)}</span></td><td>${l.status==='Closing'?money(l.value):'-'}</td><td>${esc(l.notes||'-')}</td><td><button class="btn" onclick="editLead('${l.id}')">Edit</button> <button class="btn danger" onclick="removeLead('${l.id}')">Hapus</button></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Belum ada lead pada filter ini.</td></tr>';
+    $('leadTable').innerHTML=ls.length?ls.map(l=>`<tr><td>${l.date}</td><td><b>${esc(l.invoiceCode||'-')}</b></td><td><b>${esc(l.customer)}</b><div class="muted">${esc(l.source||'')}</div></td><td>${esc(l.contact||'-')}</td><td>${esc(promos.find(p=>p.id===l.promoId)?.name||'-')}</td><td>${esc(l.sales||'-')}</td><td><span class="badge ${cls(l.status)}">${esc(l.status)}</span></td><td>${l.status==='Closing'?money(l.value):'-'}</td><td>${esc(l.notes||'-')}</td><td><button class="btn" onclick="editLead('${l.id}')">Edit</button> <button class="btn danger" onclick="removeLead('${l.id}')">Hapus</button></td></tr>`).join(''):'<tr><td colspan="10" class="empty">Belum ada lead pada filter ini.</td></tr>';
   }
 
   function renderReports(){
@@ -387,8 +401,20 @@
   document.documentElement.dataset.theme=localStorage.getItem('pp_theme')||'';
 
   window.closeModal=id=>$(id).classList.add('hidden');
+
+  function updateInvoiceRequirement(){
+    const isClosing=$('leadStatus').value==='Closing';
+    $('leadInvoice').required=isClosing;
+    $('leadInvoice').setCustomValidity('');
+    $('invoiceLabel').innerHTML=isClosing
+      ? 'Kode Invoice <span style="color:var(--bad)">*</span>'
+      : 'Kode Invoice <span class="muted">(wajib saat Closing)</span>';
+  }
+  $('leadStatus').addEventListener('change',updateInvoiceRequirement);
+  $('leadInvoice').addEventListener('input',()=>$('leadInvoice').setCustomValidity(''));
+
   $('addPromoBtn').onclick=()=>{ $('promoForm').reset();$('promoId').value='';$('promoStart').value=today();$('promoEnd').value=today();$('promoTarget').value=10;$('promoCost').value=0;$('promoModalTitle').textContent='Tambah Promo';$('promoModal').classList.remove('hidden'); };
-  $('addLeadBtn').onclick=()=>{ $('leadForm').reset();$('leadId').value='';$('leadDate').value=today();$('leadValue').value=0;$('leadModalTitle').textContent='Tambah Lead / Closing';fillPromoSelect();$('leadModal').classList.remove('hidden'); };
+  $('addLeadBtn').onclick=()=>{ $('leadForm').reset();$('leadId').value='';$('leadDate').value=today();$('leadValue').value=0;$('leadInvoice').value='';$('leadModalTitle').textContent='Tambah Lead / Closing';fillPromoSelect();updateInvoiceRequirement();$('leadModal').classList.remove('hidden'); };
 
   $('promoForm').onsubmit=async e=>{
     e.preventDefault();
@@ -400,7 +426,16 @@
   };
   $('leadForm').onsubmit=async e=>{
     e.preventDefault();
-    const data={date:$('leadDate').value,promoId:$('leadPromo').value,customer:$('leadCustomer').value.trim(),contact:$('leadContact').value.trim(),sales:$('leadSales').value.trim(),source:$('leadSource').value,status:$('leadStatus').value,value:Number($('leadValue').value||0),notes:$('leadNotes').value.trim(),updatedAt:demoMode?Date.now():serverTimestamp()};
+    const status=$('leadStatus').value;
+    const invoiceCode=$('leadInvoice').value.trim().toUpperCase();
+    if(status==='Closing' && !invoiceCode){
+      $('leadInvoice').focus();
+      $('leadInvoice').setCustomValidity('Kode invoice wajib diisi untuk status Closing.');
+      $('leadInvoice').reportValidity();
+      return;
+    }
+    $('leadInvoice').setCustomValidity('');
+    const data={date:$('leadDate').value,promoId:$('leadPromo').value,invoiceCode,customer:$('leadCustomer').value.trim(),contact:$('leadContact').value.trim(),sales:$('leadSales').value,source:$('leadSource').value,status,value:Number($('leadValue').value||0),notes:$('leadNotes').value.trim(),updatedAt:demoMode?Date.now():serverTimestamp()};
     const id=$('leadId').value;
     if(demoMode){if(id){leads=leads.map(l=>l.id===id?{...l,...data}:l)}else leads.push({id:'l'+Date.now(),...data});saveDemo();}
     else {if(id)await updateDoc(doc(db,'promoLeads',id),data);else await addDoc(collection(db,'promoLeads'),{...data,createdAt:serverTimestamp()});}
@@ -408,7 +443,7 @@
   };
 
   window.editPromo=id=>{const p=promos.find(x=>x.id===id);if(!p)return;$('promoId').value=id;$('promoName').value=p.name||'';$('promoProduct').value=p.product||'';$('promoChannel').value=p.channel||'WhatsApp';$('promoStart').value=p.startDate||'';$('promoEnd').value=p.endDate||'';$('promoTarget').value=p.targetClosing||0;$('promoCost').value=p.cost||0;$('promoOffer').value=p.offer||'';$('promoModalTitle').textContent='Edit Promo';$('promoModal').classList.remove('hidden')};
-  window.editLead=id=>{const l=leads.find(x=>x.id===id);if(!l)return;fillPromoSelect();$('leadId').value=id;$('leadDate').value=l.date||'';$('leadPromo').value=l.promoId||'';$('leadCustomer').value=l.customer||'';$('leadContact').value=l.contact||'';$('leadSales').value=l.sales||'';$('leadSource').value=l.source||'WhatsApp Story';$('leadStatus').value=l.status||'Baru';$('leadValue').value=l.value||0;$('leadNotes').value=l.notes||'';$('leadModalTitle').textContent='Edit Lead';$('leadModal').classList.remove('hidden')};
+  window.editLead=id=>{const l=leads.find(x=>x.id===id);if(!l)return;fillPromoSelect();$('leadId').value=id;$('leadDate').value=l.date||'';$('leadPromo').value=l.promoId||'';$('leadCustomer').value=l.customer||'';$('leadContact').value=l.contact||'';$('leadInvoice').value=l.invoiceCode||'';const salesSelect=$('leadSales');if(l.sales && ![...salesSelect.options].some(o=>o.value===l.sales)){const legacyOption=document.createElement('option');legacyOption.value=l.sales;legacyOption.textContent=l.sales+' (data lama)';salesSelect.appendChild(legacyOption);}salesSelect.value=l.sales||'';$('leadSource').value=l.source||'WhatsApp Story';$('leadStatus').value=l.status||'Baru';$('leadValue').value=l.value||0;$('leadNotes').value=l.notes||'';updateInvoiceRequirement();$('leadModalTitle').textContent='Edit Lead';$('leadModal').classList.remove('hidden')};
   window.removePromo=async id=>{if(!confirm('Hapus promo ini? Lead terkait tidak otomatis dihapus.'))return;if(demoMode){promos=promos.filter(p=>p.id!==id);saveDemo()}else await deleteDoc(doc(db,'promos',id))};
   window.removeLead=async id=>{if(!confirm('Hapus lead ini?'))return;if(demoMode){leads=leads.filter(l=>l.id!==id);saveDemo()}else await deleteDoc(doc(db,'promoLeads',id))};
 
