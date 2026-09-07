@@ -39,7 +39,7 @@
     .metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}
     .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
     .metric .label{font-size:13px;color:var(--muted)}.metric .value{font-size:28px;font-weight:850;margin:8px 0}.metric .sub{font-size:12px;color:var(--muted)}
-    .two{grid-template-columns:1.35fr .65fr}.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .two{grid-template-columns:1.35fr .65fr}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.four{grid-template-columns:repeat(4,minmax(0,1fr))}
     h2,h3{margin:0 0 14px}.muted{color:var(--muted)}
     .section-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}
     .filters{display:flex;gap:8px;flex-wrap:wrap}
@@ -62,11 +62,19 @@
     .login-card{width:min(420px,100%);background:rgba(15,23,42,.9);color:#fff;border:1px solid #24324e;border-radius:24px;padding:26px;box-shadow:0 30px 100px rgba(0,0,0,.35);backdrop-filter:blur(16px)}
     .login-card input{background:#111c32;color:#fff;border-color:#2a3a59}.login-card .muted{color:#94a3b8}
     .notice{font-size:12px;padding:10px 12px;border-radius:10px;background:rgba(37,99,235,.12);color:#93c5fd;margin:12px 0}
-    .kpi-bar{display:grid;grid-template-columns:90px 1fr 58px;gap:8px;align-items:center;margin:12px 0;font-size:13px}
+    .kpi-bar{display:grid;grid-template-columns:120px 1fr 70px;gap:8px;align-items:center;margin:12px 0;font-size:13px}
+    .mini-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .mini-stat{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+    .mini-stat .k{font-size:11px;color:var(--muted);margin-bottom:6px}.mini-stat .v{font-size:20px;font-weight:850}
+    .hint{font-size:11px;color:var(--muted);margin-top:6px}
+    .required-note{font-size:11px;color:var(--muted);margin-top:-4px}
+    .table-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .overdue{color:var(--bad);font-weight:800}
+    .due-soon{color:var(--warn);font-weight:800}
     .empty{text-align:center;color:var(--muted);padding:30px}
     .mobile-menu{display:none}
-    @media(max-width:980px){.app{grid-template-columns:1fr}.sidebar{display:none}.metrics{grid-template-columns:1fr 1fr}.two,.three{grid-template-columns:1fr}.mobile-menu{display:inline-flex}}
-    @media(max-width:620px){.main{padding:16px}.metrics{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.title h1{font-size:23px}.topbar{align-items:flex-start}.toolbar{justify-content:flex-end}th,td{white-space:nowrap}}
+    @media(max-width:980px){.app{grid-template-columns:1fr}.sidebar{display:none}.metrics{grid-template-columns:1fr 1fr}.two,.three,.four{grid-template-columns:1fr}.mini-grid{grid-template-columns:1fr 1fr}.mobile-menu{display:inline-flex}}
+    @media(max-width:620px){.main{padding:16px}.metrics{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.mini-grid{grid-template-columns:1fr}.title h1{font-size:23px}.topbar{align-items:flex-start}.toolbar{justify-content:flex-end}th,td{white-space:nowrap}}
   </style>
 </head>
 <body>
@@ -130,7 +138,7 @@
           <div id="promoPerformance"></div>
         </div>
         <div class="card">
-          <h3>AI-style Insight</h3>
+          <h3>Insight Otomatis</h3>
           <div id="insights"></div>
         </div>
       </div>
@@ -143,9 +151,9 @@
 
     <section id="promosView" class="view hidden">
       <div class="card">
-        <div class="section-head"><div><h3>Semua Promo</h3><div class="muted" style="font-size:12px">Budget, target, conversion dan ROI.</div></div></div>
+        <div class="section-head"><div><h3>Semua Promo</h3><div class="muted" style="font-size:12px">Distribusi, response rate, conversion, omzet dan ROAS.</div></div></div>
         <div class="table-wrap"><table>
-          <thead><tr><th>Promo</th><th>Periode</th><th>Lead</th><th>Closing</th><th>Conv.</th><th>Omzet</th><th>Biaya</th><th>ROI</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Promo</th><th>Periode</th><th>Distribusi</th><th>Lead</th><th>Response</th><th>Closing</th><th>Conv.</th><th>Omzet</th><th>Biaya</th><th>ROAS</th><th>Status</th><th></th></tr></thead>
           <tbody id="promoTable"></tbody>
         </table></div>
       </div>
@@ -154,25 +162,54 @@
     <section id="leadsView" class="view hidden">
       <div class="card">
         <div class="section-head">
-          <div><h3>Lead & Closing</h3><div class="muted" style="font-size:12px">Catat semua lead, bukan hanya yang closing.</div></div>
-          <div class="filters"><select id="statusFilter" style="width:auto"><option value="">Semua Status</option><option>Baru</option><option>Follow Up</option><option>Closing</option><option>Lost</option></select></div>
+          <div><h3>Lead & Closing</h3><div class="muted" style="font-size:12px">Track prospek, follow-up, alasan lost, customer baru dan hasil closing.</div></div>
+          <div class="table-actions">
+            <select id="statusFilter" style="width:auto"><option value="">Semua Status</option><option>Baru</option><option>Follow Up</option><option>Closing</option><option>Lost</option></select>
+            <button id="exportCsvBtn" class="btn">Export CSV</button>
+          </div>
         </div>
         <div class="table-wrap"><table>
-          <thead><tr><th>Tanggal</th><th>Kode Invoice</th><th>Customer</th><th>Kontak</th><th>Promo</th><th>Sales</th><th>Status</th><th>Order</th><th>Catatan</th><th></th></tr></thead>
+          <thead><tr><th>Tanggal</th><th>Invoice</th><th>Customer</th><th>Tipe</th><th>Promo</th><th>Sales</th><th>Status</th><th>Follow Up</th><th>Alasan Lost</th><th>Order</th><th>HPP</th><th>Catatan</th><th></th></tr></thead>
           <tbody id="leadTable"></tbody>
         </table></div>
       </div>
     </section>
 
     <section id="reportsView" class="view hidden">
-      <div class="grid three">
-        <div class="card metric"><div class="label">Biaya Promo</div><div id="rCost" class="value">Rp0</div><div class="sub">Total cost campaign</div></div>
-        <div class="card metric"><div class="label">ROI</div><div id="rROI" class="value">0%</div><div class="sub">(Omzet - biaya) ÷ biaya</div></div>
+      <div class="grid four">
+        <div class="card metric"><div class="label">Biaya Promo</div><div id="rCost" class="value">Rp0</div><div class="sub">Total campaign cost</div></div>
+        <div class="card metric"><div class="label">ROAS</div><div id="rROAS" class="value">0x</div><div class="sub">Omzet ÷ biaya promo</div></div>
+        <div class="card metric"><div class="label">CPA / Closing</div><div id="rCPA" class="value">Rp0</div><div class="sub">Biaya promo ÷ closing</div></div>
         <div class="card metric"><div class="label">Target Tercapai</div><div id="rTarget" class="value">0%</div><div class="sub">Closing ÷ target closing</div></div>
       </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="section-head"><div><h3>Efektivitas Distribusi Promo</h3><div class="muted" style="font-size:12px">Metrik khusus campaign yang mencatat jumlah brosur / materi promo tersebar.</div></div></div>
+        <div class="mini-grid">
+          <div class="mini-stat"><div class="k">Brosur / Materi Disebar</div><div id="rDistributed" class="v">0</div></div>
+          <div class="mini-stat"><div class="k">Response Rate</div><div id="rResponse" class="v">0%</div></div>
+          <div class="mini-stat"><div class="k">Cost per Lead</div><div id="rCPL" class="v">Rp0</div></div>
+          <div class="mini-stat"><div class="k">Customer Baru</div><div id="rNewCustomer" class="v">0%</div></div>
+        </div>
+      </div>
+
       <div class="grid two">
         <div class="card"><h3>Funnel Promo</h3><div id="funnel"></div></div>
         <div class="card"><h3>Rekomendasi Bulanan</h3><div id="monthlyRecommendations"></div></div>
+      </div>
+
+      <div class="grid two" style="margin-top:16px">
+        <div class="card">
+          <div class="section-head"><div><h3>Performa Sales / PIC</h3><div class="muted" style="font-size:12px">Bandingkan volume lead, conversion, omzet dan AOV.</div></div></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Sales</th><th>Lead</th><th>Closing</th><th>Conv.</th><th>Omzet</th><th>AOV</th></tr></thead>
+            <tbody id="salesPerformance"></tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <div class="section-head"><div><h3>Alasan Lost</h3><div class="muted" style="font-size:12px">Penyebab lead gagal closing.</div></div></div>
+          <div id="lostReasons"></div>
+        </div>
       </div>
     </section>
   </main>
@@ -184,13 +221,27 @@
     <form id="promoForm" class="form-grid">
       <input type="hidden" id="promoId">
       <div class="field full"><label>Nama Promo</label><input id="promoName" required placeholder="Promo Brosur September"></div>
-      <div class="field"><label>Produk</label><input id="promoProduct" required placeholder="Brosur A5"></div>
-      <div class="field"><label>Channel</label><select id="promoChannel"><option>WhatsApp</option><option>Instagram</option><option>TikTok</option><option>Walk-in</option><option>Sales</option><option>Multi-channel</option></select></div>
+      <div class="field"><label>Produk / Jenis Promo</label><input id="promoProduct" required placeholder="Brosur A5"></div>
+      <div class="field"><label>Channel</label><select id="promoChannel"><option>Brosur</option><option>WhatsApp</option><option>Instagram</option><option>TikTok</option><option>Walk-in</option><option>Sales</option><option>Multi-channel</option></select></div>
+
       <div class="field"><label>Tanggal Mulai</label><input id="promoStart" type="date" required></div>
       <div class="field"><label>Tanggal Selesai</label><input id="promoEnd" type="date" required></div>
+
+      <div class="field"><label>Target Lead</label><input id="promoTargetLead" type="number" min="0" value="0"></div>
       <div class="field"><label>Target Closing</label><input id="promoTarget" type="number" min="0" value="10"></div>
-      <div class="field"><label>Biaya Promo / Campaign (Rp)</label><input id="promoCost" type="number" min="0" value="0"></div>
-      <div class="field full"><label>Penawaran</label><textarea id="promoOffer" rows="3" placeholder="Cetak 100 lembar harga promo..."></textarea></div>
+
+      <div class="field"><label>Jumlah Brosur Dicetak</label><input id="promoPrinted" type="number" min="0" value="0"></div>
+      <div class="field"><label>Jumlah Brosur Disebar</label><input id="promoDistributed" type="number" min="0" value="0"></div>
+
+      <div class="field full"><label>Lokasi Penyebaran</label><input id="promoLocation" placeholder="Contoh: Tuparev, Galuh Mas, sekolah sekitar Karawang"></div>
+      <div class="field full"><label>Target Customer</label><input id="promoAudience" placeholder="Contoh: sekolah, UMKM kuliner, perusahaan, customer existing"></div>
+
+      <div class="field"><label>Biaya Cetak Promo (Rp)</label><input id="promoPrintCost" type="number" min="0" value="0"></div>
+      <div class="field"><label>Biaya Distribusi (Rp)</label><input id="promoDistributionCost" type="number" min="0" value="0"></div>
+      <div class="field"><label>Biaya Lainnya (Rp)</label><input id="promoOtherCost" type="number" min="0" value="0"></div>
+      <div class="field"><label>Total Biaya Promo</label><input id="promoCostDisplay" type="text" readonly value="Rp0"></div>
+
+      <div class="field full"><label>Penawaran / Mekanisme Promo</label><textarea id="promoOffer" rows="3" placeholder="Cetak 100 lembar harga promo..."></textarea></div>
       <div class="actions full"><button type="button" class="btn" onclick="closeModal('promoModal')">Batal</button><button class="btn primary">Simpan Promo</button></div>
     </form>
   </div>
@@ -201,11 +252,17 @@
     <div class="section-head"><h2 id="leadModalTitle">Tambah Lead</h2><button class="btn" onclick="closeModal('leadModal')">✕</button></div>
     <form id="leadForm" class="form-grid">
       <input type="hidden" id="leadId">
+
       <div class="field"><label>Tanggal</label><input id="leadDate" type="date" required></div>
       <div class="field"><label>Promo</label><select id="leadPromo" required></select></div>
+
       <div class="field"><label>Nama Customer</label><input id="leadCustomer" required placeholder="PT / Nama customer"></div>
       <div class="field"><label>No. WA / Kontak</label><input id="leadContact" placeholder="08xxxxxxxxxx"></div>
-      <div class="field"><label id="invoiceLabel">Kode Invoice <span class="muted">(wajib saat Closing)</span></label><input id="leadInvoice" placeholder="Contoh: CG260903001"></div>
+
+      <div class="field"><label>Jenis Customer</label><select id="leadCustomerType"><option value="Baru">Customer Baru</option><option value="Existing">Customer Existing</option><option value="Tidak Diketahui">Tidak Diketahui</option></select></div>
+      <div class="field"><label>Produk / Kebutuhan</label><input id="leadProduct" placeholder="Contoh: Brosur A5 1.000 lembar"></div>
+
+      <div class="field"><label id="invoiceLabel">Kode Invoice <span class="muted">(wajib saat Closing)</span></label><input id="leadInvoice" placeholder="Contoh: CG260907001"></div>
       <div class="field"><label>Sales / PIC</label><select id="leadSales" required>
         <option value="">Pilih Sales / PIC</option>
         <option value="Muhammad Angga Nugraha">Muhammad Angga Nugraha</option>
@@ -220,10 +277,29 @@
         <option value="Annisa Ramadhani Santosa">Annisa Ramadhani Santosa</option>
         <option value="Muhammad Daffa Ramadhiansyah">Muhammad Daffa Ramadhiansyah</option>
       </select></div>
-      <div class="field"><label>Sumber Lead</label><select id="leadSource"><option>WhatsApp Story</option><option>WhatsApp Chat</option><option>Instagram</option><option>TikTok</option><option>Google Maps</option><option>Walk-in</option><option>Referral</option><option>Sales Outreach</option><option>Lainnya</option></select></div>
+
+      <div class="field"><label>Sumber Lead</label><select id="leadSource"><option>WhatsApp Story</option><option>WhatsApp Chat</option><option>Brosur</option><option>Instagram</option><option>TikTok</option><option>Google Maps</option><option>Walk-in</option><option>Referral</option><option>Sales Outreach</option><option>Lainnya</option></select></div>
       <div class="field"><label>Status</label><select id="leadStatus"><option>Baru</option><option>Follow Up</option><option>Closing</option><option>Lost</option></select></div>
-      <div class="field"><label>Nilai Order (Rp)</label><input id="leadValue" type="number" min="0" value="0"></div>
-      <div class="field full"><label>Catatan</label><textarea id="leadNotes" rows="3" placeholder="Kebutuhan, alasan lost, follow-up berikutnya, dll"></textarea></div>
+
+      <div class="field"><label>Tanggal Follow-up Berikutnya</label><input id="leadFollowUpDate" type="date"></div>
+      <div class="field"><label id="lostReasonLabel">Alasan Lost</label><select id="leadLostReason">
+        <option value="">Tidak ada / belum Lost</option>
+        <option>Harga terlalu tinggi</option>
+        <option>Customer belum butuh</option>
+        <option>Kompetitor</option>
+        <option>Tidak ada respon</option>
+        <option>Budget belum tersedia</option>
+        <option>Deadline tidak cocok</option>
+        <option>Produk tidak sesuai</option>
+        <option>Follow-up terlambat</option>
+        <option>Lainnya</option>
+      </select></div>
+
+      <div class="field"><label>Nilai Order / Omzet (Rp)</label><input id="leadValue" type="number" min="0" value="0"></div>
+      <div class="field"><label>Estimasi HPP (Rp)</label><input id="leadHpp" type="number" min="0" value="0"><div class="hint">Opsional, dipakai untuk estimasi laba.</div></div>
+
+      <div class="field full"><label>Catatan</label><textarea id="leadNotes" rows="3" placeholder="Detail kebutuhan, hasil follow-up, alasan tambahan, dll"></textarea></div>
+
       <div class="actions full"><button type="button" class="btn" onclick="closeModal('leadModal')">Batal</button><button class="btn primary">Simpan Lead</button></div>
     </form>
   </div>
@@ -232,7 +308,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
   import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
-  import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
   // =========================================================
@@ -260,16 +336,24 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
   const today = () => new Date().toISOString().slice(0,10);
   const monthKey = d => (d||'').slice(0,7);
+  const num = n => Number(n||0);
+  const ratio = (a,b) => b ? (a/b)*100 : 0;
+  const promoTotalCost = p => {
+    const parts=num(p.printCost)+num(p.distributionCost)+num(p.otherCost);
+    return parts>0 ? parts : num(p.cost);
+  };
+  const isPastDate = d => d && d < today();
+  const isTodayDate = d => d && d === today();
 
   function seedDemo(){
     if(localStorage.getItem('pp_promos')) return;
     const y = new Date().getFullYear(), m = String(new Date().getMonth()+1).padStart(2,'0');
-    const p = [{id:'demo1',name:'Promo Brosur September',product:'Brosur',channel:'WhatsApp',startDate:`${y}-${m}-01`,endDate:`${y}-${m}-30`,targetClosing:20,cost:500000,offer:'Cetak 100 lembar harga promo'}];
+    const p = [{id:'demo1',name:'Promo Brosur September',product:'Brosur A5',channel:'Brosur',startDate:`${y}-${m}-01`,endDate:`${y}-${m}-30`,targetLead:100,targetClosing:20,printed:5000,distributed:4200,location:'Tuparev & Galuh Mas',audience:'UMKM dan sekolah',printCost:350000,distributionCost:100000,otherCost:50000,cost:500000,offer:'Cetak 100 lembar harga promo'}];
     const l = [
-      {id:'l1',date:`${y}-${m}-01`,promoId:'demo1',invoiceCode:'CG-DEMO-001',customer:'Kedai Nusantara',contact:'0812xxxx',sales:'Nayla Reva Mutiara',source:'WhatsApp Story',status:'Closing',value:850000,notes:'Cetak brosur A5'},
-      {id:'l2',date:`${y}-${m}-01`,promoId:'demo1',invoiceCode:'',customer:'CV Maju',contact:'0813xxxx',sales:'Pinkan Julian Salsabilla',source:'Instagram',status:'Follow Up',value:0,notes:'Minta penawaran 500 lbr'},
-      {id:'l3',date:`${y}-${m}-02`,promoId:'demo1',invoiceCode:'',customer:'Toko Sinar',contact:'0821xxxx',sales:'Nabilah Nurul Rahmadhaniyanti',source:'WhatsApp Chat',status:'Lost',value:0,notes:'Harga belum cocok'},
-      {id:'l4',date:`${y}-${m}-02`,promoId:'demo1',invoiceCode:'CG-DEMO-002',customer:'Kopi Barat',contact:'0857xxxx',sales:'Nayla Reva Mutiara',source:'Referral',status:'Closing',value:1200000,notes:'Brosur + menu'}
+      {id:'l1',date:`${y}-${m}-01`,promoId:'demo1',invoiceCode:'CG-DEMO-001',customer:'Kedai Nusantara',contact:'0812xxxx',customerType:'Baru',productNeed:'Brosur A5',sales:'Nayla Reva Mutiara',source:'Brosur',status:'Closing',followUpDate:'',lostReason:'',value:850000,hpp:430000,notes:'Cetak brosur A5'},
+      {id:'l2',date:`${y}-${m}-01`,promoId:'demo1',invoiceCode:'',customer:'CV Maju',contact:'0813xxxx',customerType:'Existing',productNeed:'Brosur 500 lbr',sales:'Pinkan Julian Salsabilla',source:'Instagram',status:'Follow Up',followUpDate:`${y}-${m}-10`,lostReason:'',value:0,hpp:0,notes:'Minta penawaran 500 lbr'},
+      {id:'l3',date:`${y}-${m}-02`,promoId:'demo1',invoiceCode:'',customer:'Toko Sinar',contact:'0821xxxx',customerType:'Baru',productNeed:'Brosur',sales:'Nabilah Nurul Rahmadhaniyanti',source:'WhatsApp Chat',status:'Lost',followUpDate:'',lostReason:'Harga terlalu tinggi',value:0,hpp:0,notes:'Harga belum cocok'},
+      {id:'l4',date:`${y}-${m}-02`,promoId:'demo1',invoiceCode:'CG-DEMO-002',customer:'Kopi Barat',contact:'0857xxxx',customerType:'Baru',productNeed:'Brosur + menu',sales:'Nayla Reva Mutiara',source:'Referral',status:'Closing',followUpDate:'',lostReason:'',value:1200000,hpp:600000,notes:'Brosur + menu'}
     ];
     localStorage.setItem('pp_promos',JSON.stringify(p)); localStorage.setItem('pp_leads',JSON.stringify(l));
   }
@@ -292,19 +376,31 @@
   function calcPromo(p){
     const ls=leads.filter(x=>x.promoId===p.id);
     const won=ls.filter(x=>x.status==='Closing');
-    const revenue=won.reduce((a,b)=>a+Number(b.value||0),0);
-    const conv=ls.length?won.length/ls.length*100:0;
-    const cost=Number(p.cost||0);
-    const roi=cost?((revenue-cost)/cost)*100:(revenue>0?999:0);
-    const target=Number(p.targetClosing||0);
-    const targetRate=target?won.length/target*100:0;
-    const score=Math.max(0,Math.min(100,conv*.45 + Math.min(targetRate,100)*.35 + Math.min(Math.max(roi,0),200)/2*.20));
-    return {leadCount:ls.length,wonCount:won.length,revenue,conv,cost,roi,targetRate,score};
+    const revenue=won.reduce((a,b)=>a+num(b.value),0);
+    const hpp=won.reduce((a,b)=>a+num(b.hpp),0);
+    const conv=ratio(won.length,ls.length);
+    const cost=promoTotalCost(p);
+    const roas=cost?revenue/cost:0;
+    const target=num(p.targetClosing);
+    const targetRate=ratio(won.length,target);
+    const distributed=num(p.distributed);
+    const responseRate=ratio(ls.length,distributed);
+    const cpl=ls.length?cost/ls.length:0;
+    const cpa=won.length?cost/won.length:0;
+    const grossProfit=revenue-hpp;
+    const profitAfterPromo=grossProfit-cost;
+    const score=Math.max(0,Math.min(100,
+      Math.min(conv,40)/40*35 +
+      Math.min(targetRate,100)/100*25 +
+      Math.min(roas,5)/5*25 +
+      Math.min(responseRate,5)/5*15
+    ));
+    return {leadCount:ls.length,wonCount:won.length,revenue,hpp,grossProfit,profitAfterPromo,conv,cost,roas,targetRate,distributed,responseRate,cpl,cpa,score};
   }
   function effectiveLabel(k){
     if(k.leadCount<5)return ['Data minim','follow'];
-    if(k.roi>=100 && k.conv>=20)return ['Sangat efektif','won'];
-    if(k.roi>=0 && k.conv>=10)return ['Cukup efektif','new'];
+    if(k.roas>=3 && k.conv>=20)return ['Sangat efektif','won'];
+    if(k.roas>=1.5 && k.conv>=10)return ['Cukup efektif','new'];
     return ['Perlu evaluasi','lost'];
   }
 
@@ -318,22 +414,39 @@
 
   function renderDashboard(){
     const ls=filteredLeads(), ps=filteredPromos(), won=ls.filter(x=>x.status==='Closing');
-    const revenue=won.reduce((a,b)=>a+Number(b.value||0),0), conv=ls.length?won.length/ls.length*100:0;
+    const revenue=won.reduce((a,b)=>a+num(b.value),0), conv=ratio(won.length,ls.length);
     $('mLeads').textContent=ls.length; $('mClosing').textContent=won.length; $('mConversion').textContent=pct(conv); $('mRevenue').textContent=money(revenue);
 
     const ranked=ps.map(p=>({p,k:calcPromo(p)})).sort((a,b)=>b.k.score-a.k.score);
     $('promoPerformance').innerHTML=ranked.length?ranked.map(({p,k})=>{
       const [label,cls]=effectiveLabel(k);
-      return `<div class="promo-item"><div class="promo-top"><div><div class="promo-name">${esc(p.name)}</div><div class="promo-meta">${k.wonCount}/${k.leadCount} closing • ${money(k.revenue)} • ROI ${k.cost?pct(k.roi):'n/a'}</div></div><span class="badge ${cls}">${label}</span></div><div class="progress" style="margin-top:10px"><span style="width:${Math.max(4,k.score)}%"></span></div></div>`
+      const response=k.distributed?` • Response ${pct(k.responseRate)}`:'';
+      const roas=k.cost?` • ROAS ${k.roas.toFixed(2)}x`:'';
+      return `<div class="promo-item"><div class="promo-top"><div><div class="promo-name">${esc(p.name)}</div><div class="promo-meta">${k.wonCount}/${k.leadCount} closing • ${money(k.revenue)}${response}${roas}</div></div><span class="badge ${cls}">${label}</span></div><div class="progress" style="margin-top:10px"><span style="width:${Math.max(4,k.score)}%"></span></div></div>`
     }).join(''):'<div class="empty">Belum ada promo pada periode ini.</div>';
 
     const ins=[];
-    if(ls.length<10) ins.push(['warn','Data belum cukup kuat','Minimal 10–20 lead per promo akan membuat evaluasi conversion rate lebih bermakna.']);
-    if(conv>=25) ins.push(['ok','Conversion rate kuat',`Conversion ${pct(conv)}. Pertahankan channel dan penawaran yang menghasilkan closing.`]);
+    if(ls.length<10) ins.push(['warn','Data belum cukup kuat','Kumpulkan minimal 10–20 lead per promo agar conversion dan response rate lebih bermakna.']);
+    if(conv>=25) ins.push(['ok','Conversion rate kuat',`Conversion ${pct(conv)}. Pertahankan penawaran dan proses follow-up yang menghasilkan closing.`]);
     else if(ls.length) ins.push(['bad','Conversion perlu diperbaiki',`Conversion baru ${pct(conv)}. Audit kualitas lead, follow-up, harga dan penawaran.`]);
+
+    const distributed=ps.reduce((a,p)=>a+num(p.distributed),0);
+    if(distributed){
+      const rr=ratio(ls.length,distributed);
+      ins.push([rr>=2?'ok':rr>=1?'warn':'bad','Response rate distribusi',`${ls.length} lead dari ${distributed.toLocaleString('id-ID')} materi promo = ${pct(rr)} response rate.`]);
+    }
+
     const lost=ls.filter(x=>x.status==='Lost').length;
-    if(lost) ins.push(['warn','Lost lead perlu dibaca',`${lost} lead lost. Isi alasan lost di catatan agar promo berikutnya tidak mengulang masalah yang sama.`]);
-    if(ranked[0]?.k.score>=50) ins.push(['ok','Promo terbaik periode ini',`${ranked[0].p.name} memiliki skor efektivitas tertinggi (${ranked[0].k.score.toFixed(0)}/100). Layak diuji ulang atau dinaikkan skalanya.`]);
+    const lostWithReason=ls.filter(x=>x.status==='Lost'&&x.lostReason).length;
+    if(lost && lostWithReason<lost) ins.push(['warn','Alasan Lost belum lengkap',`${lost-lostWithReason} lead Lost belum memiliki kategori alasan.`]);
+
+    const overdue=ls.filter(x=>x.status==='Follow Up'&&isPastDate(x.followUpDate)).length;
+    if(overdue) ins.push(['bad','Follow-up terlambat',`${overdue} lead melewati jadwal follow-up. Ini berpotensi menurunkan conversion.`]);
+
+    const newCust=won.filter(x=>x.customerType==='Baru').length;
+    if(won.length) ins.push(['ok','Akuisisi customer baru',`${newCust} dari ${won.length} closing (${pct(ratio(newCust,won.length))}) berasal dari customer baru.`]);
+
+    if(ranked[0]?.k.score>=50) ins.push(['ok','Promo terbaik periode ini',`${ranked[0].p.name} memiliki skor efektivitas tertinggi (${ranked[0].k.score.toFixed(0)}/100). Layak diuji scale-up bertahap.`]);
     $('insights').innerHTML=ins.map(i=>`<div class="insight ${i[0]}"><b>${i[1]}</b><div class="muted" style="font-size:12px;margin-top:4px">${i[2]}</div></div>`).join('');
 
     const latest=[...won].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
@@ -344,35 +457,110 @@
     const ps=filteredPromos();
     $('promoTable').innerHTML=ps.length?ps.map(p=>{
       const k=calcPromo(p), [label,cls]=effectiveLabel(k);
-      return `<tr><td><b>${esc(p.name)}</b><div class="muted">${esc(p.product||'')}</div></td><td>${p.startDate}<br>${p.endDate}</td><td>${k.leadCount}</td><td>${k.wonCount}</td><td>${pct(k.conv)}</td><td>${money(k.revenue)}</td><td>${money(k.cost)}</td><td>${k.cost?pct(k.roi):'-'}</td><td><span class="badge ${cls}">${label}</span></td><td><button class="btn" onclick="editPromo('${p.id}')">Edit</button> <button class="btn danger" onclick="removePromo('${p.id}')">Hapus</button></td></tr>`
-    }).join(''):'<tr><td colspan="10" class="empty">Belum ada data promo.</td></tr>';
+      return `<tr>
+        <td><b>${esc(p.name)}</b><div class="muted">${esc(p.product||'')}</div><div class="muted">${esc(p.location||'')}</div></td>
+        <td>${p.startDate||'-'}<br>${p.endDate||'-'}</td>
+        <td>${num(p.distributed).toLocaleString('id-ID')}</td>
+        <td>${k.leadCount}</td>
+        <td>${p.distributed?pct(k.responseRate):'-'}</td>
+        <td>${k.wonCount}</td>
+        <td>${pct(k.conv)}</td>
+        <td>${money(k.revenue)}</td>
+        <td>${money(k.cost)}</td>
+        <td>${k.cost?k.roas.toFixed(2)+'x':'-'}</td>
+        <td><span class="badge ${cls}">${label}</span></td>
+        <td><button class="btn" onclick="editPromo('${p.id}')">Edit</button> <button class="btn danger" onclick="removePromo('${p.id}')">Hapus</button></td>
+      </tr>`
+    }).join(''):'<tr><td colspan="12" class="empty">Belum ada data promo.</td></tr>';
   }
 
   function renderLeads(){
     const sf=$('statusFilter').value; let ls=filteredLeads(); if(sf)ls=ls.filter(x=>x.status===sf);
     ls=[...ls].sort((a,b)=>b.date.localeCompare(a.date));
     const cls=s=>s==='Closing'?'won':s==='Lost'?'lost':s==='Follow Up'?'follow':'new';
-    $('leadTable').innerHTML=ls.length?ls.map(l=>`<tr><td>${l.date}</td><td><b>${esc(l.invoiceCode||'-')}</b></td><td><b>${esc(l.customer)}</b><div class="muted">${esc(l.source||'')}</div></td><td>${esc(l.contact||'-')}</td><td>${esc(promos.find(p=>p.id===l.promoId)?.name||'-')}</td><td>${esc(l.sales||'-')}</td><td><span class="badge ${cls(l.status)}">${esc(l.status)}</span></td><td>${l.status==='Closing'?money(l.value):'-'}</td><td>${esc(l.notes||'-')}</td><td><button class="btn" onclick="editLead('${l.id}')">Edit</button> <button class="btn danger" onclick="removeLead('${l.id}')">Hapus</button></td></tr>`).join(''):'<tr><td colspan="10" class="empty">Belum ada lead pada filter ini.</td></tr>';
+    const followText=l=>{
+      if(!l.followUpDate)return '-';
+      if(l.status!=='Follow Up')return l.followUpDate;
+      if(isPastDate(l.followUpDate))return `<span class="overdue">${l.followUpDate} • Terlambat</span>`;
+      if(isTodayDate(l.followUpDate))return `<span class="due-soon">${l.followUpDate} • Hari ini</span>`;
+      return l.followUpDate;
+    };
+    $('leadTable').innerHTML=ls.length?ls.map(l=>`<tr>
+      <td>${l.date}</td>
+      <td><b>${esc(l.invoiceCode||'-')}</b></td>
+      <td><b>${esc(l.customer)}</b><div class="muted">${esc(l.productNeed||l.source||'')}</div></td>
+      <td>${esc(l.customerType||'-')}</td>
+      <td>${esc(promos.find(p=>p.id===l.promoId)?.name||'-')}</td>
+      <td>${esc(l.sales||'-')}</td>
+      <td><span class="badge ${cls(l.status)}">${esc(l.status)}</span></td>
+      <td>${followText(l)}</td>
+      <td>${esc(l.lostReason||'-')}</td>
+      <td>${l.status==='Closing'?money(l.value):'-'}</td>
+      <td>${l.status==='Closing'&&num(l.hpp)>0?money(l.hpp):'-'}</td>
+      <td>${esc(l.notes||'-')}</td>
+      <td><button class="btn" onclick="editLead('${l.id}')">Edit</button> <button class="btn danger" onclick="removeLead('${l.id}')">Hapus</button></td>
+    </tr>`).join(''):'<tr><td colspan="13" class="empty">Belum ada lead pada filter ini.</td></tr>';
   }
 
   function renderReports(){
-    const ls=filteredLeads(), ps=filteredPromos(), won=ls.filter(x=>x.status==='Closing'), revenue=won.reduce((a,b)=>a+Number(b.value||0),0);
-    const cost=ps.reduce((a,p)=>a+Number(p.cost||0),0), roi=cost?((revenue-cost)/cost)*100:0;
-    const target=ps.reduce((a,p)=>a+Number(p.targetClosing||0),0), targetRate=target?won.length/target*100:0;
-    $('rCost').textContent=money(cost); $('rROI').textContent=pct(roi); $('rTarget').textContent=pct(targetRate);
+    const ls=filteredLeads(), ps=filteredPromos(), won=ls.filter(x=>x.status==='Closing'), revenue=won.reduce((a,b)=>a+num(b.value),0);
+    const cost=ps.reduce((a,p)=>a+promoTotalCost(p),0);
+    const target=ps.reduce((a,p)=>a+num(p.targetClosing),0);
+    const targetRate=ratio(won.length,target);
+    const roas=cost?revenue/cost:0;
+    const cpa=won.length?cost/won.length:0;
+    const cpl=ls.length?cost/ls.length:0;
+    const distributed=ps.reduce((a,p)=>a+num(p.distributed),0);
+    const responseRate=ratio(ls.length,distributed);
+    const newCustomerWon=won.filter(x=>x.customerType==='Baru').length;
+    const newCustomerRate=ratio(newCustomerWon,won.length);
+
+    $('rCost').textContent=money(cost);
+    $('rROAS').textContent=cost?roas.toFixed(2)+'x':'0x';
+    $('rCPA').textContent=won.length?money(cpa):'Rp0';
+    $('rTarget').textContent=pct(targetRate);
+    $('rDistributed').textContent=distributed.toLocaleString('id-ID');
+    $('rResponse').textContent=distributed?pct(responseRate):'0%';
+    $('rCPL').textContent=ls.length?money(cpl):'Rp0';
+    $('rNewCustomer').textContent=won.length?pct(newCustomerRate):'0%';
+
     const counts={Baru:0,'Follow Up':0,Closing:0,Lost:0}; ls.forEach(l=>counts[l.status]=(counts[l.status]||0)+1);
     const max=Math.max(1,...Object.values(counts));
     $('funnel').innerHTML=Object.entries(counts).map(([k,v])=>`<div class="kpi-bar"><span>${k}</span><div class="progress"><span style="width:${v/max*100}%"></span></div><b>${v}</b></div>`).join('');
 
     const rec=[];
     if(!ls.length)rec.push('Mulai dengan mencatat setiap inquiry/lead yang masuk dari promo.');
-    if(ls.length && won.length/ls.length<.1)rec.push('Conversion di bawah 10%: jangan buru-buru tambah budget. Perbaiki offer, target audience, respon sales, dan follow-up.');
-    if(cost && roi<0)rec.push('ROI negatif: hentikan scaling promo sampai penyebab biaya tinggi atau omzet rendah ditemukan.');
-    if(targetRate>=100)rec.push('Target closing tercapai. Uji scale-up bertahap 20–30%, bukan langsung menggandakan budget.');
-    const lostNotes=ls.filter(l=>l.status==='Lost'&&l.notes).length;
-    if(ls.filter(l=>l.status==='Lost').length>lostNotes)rec.push('Sebagian lead Lost belum memiliki alasan. Wajib isi alasan lost agar laporan berikutnya menghasilkan insight yang bisa ditindaklanjuti.');
-    if(!rec.length)rec.push('Data relatif sehat. Fokus berikutnya: bandingkan channel, salesperson, nilai order rata-rata, dan repeat order.');
+    if(distributed && responseRate<1)rec.push(`Response rate hanya ${pct(responseRate)}. Evaluasi lokasi distribusi, target audiens dan headline promo sebelum mencetak lebih banyak.`);
+    if(ls.length && ratio(won.length,ls.length)<10)rec.push('Conversion di bawah 10%: jangan tambah budget dulu. Audit offer, respon sales, follow-up dan keberatan customer.');
+    if(cost && roas<1)rec.push('ROAS di bawah 1x: omzet promo belum menutup biaya campaign. Hentikan scaling sampai penyebabnya jelas.');
+    if(cost && roas>=3)rec.push(`ROAS ${roas.toFixed(2)}x cukup kuat. Pertimbangkan scale-up bertahap 20–30% pada campaign terbaik.`);
+    if(targetRate>=100)rec.push('Target closing tercapai. Bandingkan juga response rate dan customer baru agar keberhasilan tidak hanya berasal dari customer existing.');
+    const overdue=ls.filter(l=>l.status==='Follow Up'&&isPastDate(l.followUpDate)).length;
+    if(overdue)rec.push(`${overdue} follow-up terlambat. Prioritaskan lead tersebut sebelum menambah lead baru.`);
+    const lostTotal=ls.filter(l=>l.status==='Lost').length;
+    const lostReasonFilled=ls.filter(l=>l.status==='Lost'&&l.lostReason).length;
+    if(lostTotal>lostReasonFilled)rec.push(`${lostTotal-lostReasonFilled} lead Lost belum memiliki alasan terstruktur. Data ini perlu dilengkapi agar keputusan promo tidak berdasarkan tebakan.`);
+    if(!rec.length)rec.push('Data relatif sehat. Fokus berikutnya: scale campaign terbaik, perbaiki sumber Lost terbesar, dan jaga kecepatan follow-up.');
     $('monthlyRecommendations').innerHTML=rec.map((x,i)=>`<div class="insight ${i===0?'ok':''}"><b>Rekomendasi ${i+1}</b><div class="muted" style="font-size:12px;margin-top:4px">${x}</div></div>`).join('');
+
+    // Sales performance
+    const bySales={};
+    ls.forEach(l=>{
+      const s=l.sales||'Belum ditentukan';
+      if(!bySales[s])bySales[s]={lead:0,closing:0,revenue:0};
+      bySales[s].lead++;
+      if(l.status==='Closing'){bySales[s].closing++;bySales[s].revenue+=num(l.value);}
+    });
+    const salesRows=Object.entries(bySales).map(([sales,k])=>({...k,sales,conv:ratio(k.closing,k.lead),aov:k.closing?k.revenue/k.closing:0}))
+      .sort((a,b)=>b.revenue-a.revenue);
+    $('salesPerformance').innerHTML=salesRows.length?salesRows.map(s=>`<tr><td><b>${esc(s.sales)}</b></td><td>${s.lead}</td><td>${s.closing}</td><td>${pct(s.conv)}</td><td>${money(s.revenue)}</td><td>${money(s.aov)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada data sales.</td></tr>';
+
+    // Lost reasons
+    const lostMap={};
+    ls.filter(l=>l.status==='Lost').forEach(l=>{const r=l.lostReason||'Belum diisi';lostMap[r]=(lostMap[r]||0)+1;});
+    const lostRows=Object.entries(lostMap).sort((a,b)=>b[1]-a[1]);
+    const lostMax=Math.max(1,...lostRows.map(x=>x[1]));
+    $('lostReasons').innerHTML=lostRows.length?lostRows.map(([r,v])=>`<div class="kpi-bar"><span>${esc(r)}</span><div class="progress"><span style="width:${v/lostMax*100}%"></span></div><b>${v}</b></div>`).join(''):'<div class="empty">Belum ada lead Lost.</div>';
   }
 
   function fillPromoSelect(){
@@ -402,23 +590,99 @@
 
   window.closeModal=id=>$(id).classList.add('hidden');
 
-  function updateInvoiceRequirement(){
-    const isClosing=$('leadStatus').value==='Closing';
+  function updateLeadRequirements(){
+    const status=$('leadStatus').value;
+    const isClosing=status==='Closing';
+    const isLost=status==='Lost';
+
     $('leadInvoice').required=isClosing;
+    $('leadValue').required=isClosing;
+    $('leadLostReason').required=isLost;
+
     $('leadInvoice').setCustomValidity('');
+    $('leadValue').setCustomValidity('');
+    $('leadLostReason').setCustomValidity('');
+
     $('invoiceLabel').innerHTML=isClosing
       ? 'Kode Invoice <span style="color:var(--bad)">*</span>'
       : 'Kode Invoice <span class="muted">(wajib saat Closing)</span>';
-  }
-  $('leadStatus').addEventListener('change',updateInvoiceRequirement);
-  $('leadInvoice').addEventListener('input',()=>$('leadInvoice').setCustomValidity(''));
 
-  $('addPromoBtn').onclick=()=>{ $('promoForm').reset();$('promoId').value='';$('promoStart').value=today();$('promoEnd').value=today();$('promoTarget').value=10;$('promoCost').value=0;$('promoModalTitle').textContent='Tambah Promo';$('promoModal').classList.remove('hidden'); };
-  $('addLeadBtn').onclick=()=>{ $('leadForm').reset();$('leadId').value='';$('leadDate').value=today();$('leadValue').value=0;$('leadInvoice').value='';$('leadModalTitle').textContent='Tambah Lead / Closing';fillPromoSelect();updateInvoiceRequirement();$('leadModal').classList.remove('hidden'); };
+    $('lostReasonLabel').innerHTML=isLost
+      ? 'Alasan Lost <span style="color:var(--bad)">*</span>'
+      : 'Alasan Lost';
+
+    if(isClosing){
+      $('leadFollowUpDate').value='';
+      $('leadLostReason').value='';
+    }
+    if(isLost){
+      $('leadFollowUpDate').value='';
+      $('leadInvoice').value='';
+    }
+  }
+
+  function updatePromoCostDisplay(){
+    const total=num($('promoPrintCost').value)+num($('promoDistributionCost').value)+num($('promoOtherCost').value);
+    $('promoCostDisplay').value=money(total);
+  }
+
+  async function invoiceExists(invoiceCode,currentId=''){
+    if(!invoiceCode)return false;
+    const local=leads.some(l=>l.id!==currentId && String(l.invoiceCode||'').toUpperCase()===invoiceCode.toUpperCase());
+    if(local)return true;
+    if(demoMode)return false;
+    try{
+      const q=query(collection(db,'promoLeads'),where('invoiceCode','==',invoiceCode.toUpperCase()));
+      const snap=await getDocs(q);
+      return snap.docs.some(d=>d.id!==currentId);
+    }catch(e){
+      console.warn('Invoice duplicate check fallback:',e);
+      return false;
+    }
+  }
+
+  function exportLeadsCsv(){
+    let rows=filteredLeads();
+    const sf=$('statusFilter').value;if(sf)rows=rows.filter(x=>x.status===sf);
+    const headers=['Tanggal','Kode Invoice','Customer','Jenis Customer','Kontak','Promo','Produk/Kebutuhan','Sales/PIC','Sumber Lead','Status','Follow Up','Alasan Lost','Nilai Order','HPP','Catatan'];
+    const data=rows.map(l=>[
+      l.date,l.invoiceCode||'',l.customer,l.customerType||'',l.contact||'',
+      promos.find(p=>p.id===l.promoId)?.name||'',l.productNeed||'',l.sales||'',l.source||'',l.status||'',
+      l.followUpDate||'',l.lostReason||'',num(l.value),num(l.hpp),l.notes||''
+    ]);
+    const csv=[headers,...data].map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(',')).join('\n');
+    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;
+    a.download=`recappromo-${currentMonth()==='all'?'semua':currentMonth()}.csv`;a.click();URL.revokeObjectURL(url);
+  }
+
+  $('leadStatus').addEventListener('change',updateLeadRequirements);
+  $('leadInvoice').addEventListener('input',()=>$('leadInvoice').setCustomValidity(''));
+  ['promoPrintCost','promoDistributionCost','promoOtherCost'].forEach(id=>$(id).addEventListener('input',updatePromoCostDisplay));
+  $('exportCsvBtn').addEventListener('click',exportLeadsCsv);
+
+  $('addPromoBtn').onclick=()=>{ $('promoForm').reset();$('promoId').value='';$('promoStart').value=today();$('promoEnd').value=today();$('promoTargetLead').value=0;$('promoTarget').value=10;$('promoPrinted').value=0;$('promoDistributed').value=0;$('promoPrintCost').value=0;$('promoDistributionCost').value=0;$('promoOtherCost').value=0;updatePromoCostDisplay();$('promoModalTitle').textContent='Tambah Promo';$('promoModal').classList.remove('hidden'); };
+  $('addLeadBtn').onclick=()=>{ $('leadForm').reset();$('leadId').value='';$('leadDate').value=today();$('leadValue').value=0;$('leadHpp').value=0;$('leadInvoice').value='';$('leadCustomerType').value='Baru';$('leadModalTitle').textContent='Tambah Lead / Closing';fillPromoSelect();updateLeadRequirements();$('leadModal').classList.remove('hidden'); };
 
   $('promoForm').onsubmit=async e=>{
     e.preventDefault();
-    const data={name:$('promoName').value.trim(),product:$('promoProduct').value.trim(),channel:$('promoChannel').value,startDate:$('promoStart').value,endDate:$('promoEnd').value,targetClosing:Number($('promoTarget').value||0),cost:Number($('promoCost').value||0),offer:$('promoOffer').value.trim(),updatedAt:demoMode?Date.now():serverTimestamp()};
+    const printCost=num($('promoPrintCost').value);
+    const distributionCost=num($('promoDistributionCost').value);
+    const otherCost=num($('promoOtherCost').value);
+    const cost=printCost+distributionCost+otherCost;
+    const printed=num($('promoPrinted').value), distributed=num($('promoDistributed').value);
+    if(distributed>printed && printed>0){
+      $('promoDistributed').setCustomValidity('Jumlah yang disebar tidak boleh melebihi jumlah yang dicetak.');
+      $('promoDistributed').reportValidity();return;
+    }
+    $('promoDistributed').setCustomValidity('');
+    const data={
+      name:$('promoName').value.trim(),product:$('promoProduct').value.trim(),channel:$('promoChannel').value,
+      startDate:$('promoStart').value,endDate:$('promoEnd').value,targetLead:num($('promoTargetLead').value),targetClosing:num($('promoTarget').value),
+      printed,distributed,location:$('promoLocation').value.trim(),audience:$('promoAudience').value.trim(),
+      printCost,distributionCost,otherCost,cost,offer:$('promoOffer').value.trim(),
+      updatedAt:demoMode?Date.now():serverTimestamp()
+    };
     const id=$('promoId').value;
     if(demoMode){ if(id){promos=promos.map(p=>p.id===id?{...p,...data}:p)}else promos.push({id:'p'+Date.now(),...data});saveDemo();}
     else { if(id)await updateDoc(doc(db,'promos',id),data); else await addDoc(collection(db,'promos'),{...data,createdAt:serverTimestamp()}); }
@@ -428,26 +692,60 @@
     e.preventDefault();
     const status=$('leadStatus').value;
     const invoiceCode=$('leadInvoice').value.trim().toUpperCase();
-    if(status==='Closing' && !invoiceCode){
-      $('leadInvoice').focus();
-      $('leadInvoice').setCustomValidity('Kode invoice wajib diisi untuk status Closing.');
-      $('leadInvoice').reportValidity();
-      return;
-    }
-    $('leadInvoice').setCustomValidity('');
-    const data={date:$('leadDate').value,promoId:$('leadPromo').value,invoiceCode,customer:$('leadCustomer').value.trim(),contact:$('leadContact').value.trim(),sales:$('leadSales').value,source:$('leadSource').value,status,value:Number($('leadValue').value||0),notes:$('leadNotes').value.trim(),updatedAt:demoMode?Date.now():serverTimestamp()};
+    const value=num($('leadValue').value);
+    const lostReason=$('leadLostReason').value;
     const id=$('leadId').value;
+
+    if(status==='Closing' && !invoiceCode){
+      $('leadInvoice').focus();$('leadInvoice').setCustomValidity('Kode invoice wajib diisi untuk status Closing.');$('leadInvoice').reportValidity();return;
+    }
+    if(status==='Closing' && value<=0){
+      $('leadValue').focus();$('leadValue').setCustomValidity('Nilai order harus lebih dari 0 untuk status Closing.');$('leadValue').reportValidity();return;
+    }
+    if(status==='Lost' && !lostReason){
+      $('leadLostReason').focus();$('leadLostReason').setCustomValidity('Pilih alasan Lost.');$('leadLostReason').reportValidity();return;
+    }
+    if(invoiceCode && await invoiceExists(invoiceCode,id)){
+      $('leadInvoice').focus();$('leadInvoice').setCustomValidity(`Invoice ${invoiceCode} sudah tercatat. Gunakan kode invoice lain.`);$('leadInvoice').reportValidity();return;
+    }
+
+    $('leadInvoice').setCustomValidity('');$('leadValue').setCustomValidity('');$('leadLostReason').setCustomValidity('');
+
+    const data={
+      date:$('leadDate').value,promoId:$('leadPromo').value,invoiceCode,
+      customer:$('leadCustomer').value.trim(),contact:$('leadContact').value.trim(),
+      customerType:$('leadCustomerType').value,productNeed:$('leadProduct').value.trim(),
+      sales:$('leadSales').value,source:$('leadSource').value,status,
+      followUpDate:status==='Follow Up'?$('leadFollowUpDate').value:'',
+      lostReason:status==='Lost'?lostReason:'',
+      value:status==='Closing'?value:0,hpp:status==='Closing'?num($('leadHpp').value):0,
+      notes:$('leadNotes').value.trim(),updatedAt:demoMode?Date.now():serverTimestamp()
+    };
     if(demoMode){if(id){leads=leads.map(l=>l.id===id?{...l,...data}:l)}else leads.push({id:'l'+Date.now(),...data});saveDemo();}
     else {if(id)await updateDoc(doc(db,'promoLeads',id),data);else await addDoc(collection(db,'promoLeads'),{...data,createdAt:serverTimestamp()});}
     closeModal('leadModal');
   };
 
-  window.editPromo=id=>{const p=promos.find(x=>x.id===id);if(!p)return;$('promoId').value=id;$('promoName').value=p.name||'';$('promoProduct').value=p.product||'';$('promoChannel').value=p.channel||'WhatsApp';$('promoStart').value=p.startDate||'';$('promoEnd').value=p.endDate||'';$('promoTarget').value=p.targetClosing||0;$('promoCost').value=p.cost||0;$('promoOffer').value=p.offer||'';$('promoModalTitle').textContent='Edit Promo';$('promoModal').classList.remove('hidden')};
-  window.editLead=id=>{const l=leads.find(x=>x.id===id);if(!l)return;fillPromoSelect();$('leadId').value=id;$('leadDate').value=l.date||'';$('leadPromo').value=l.promoId||'';$('leadCustomer').value=l.customer||'';$('leadContact').value=l.contact||'';$('leadInvoice').value=l.invoiceCode||'';const salesSelect=$('leadSales');if(l.sales && ![...salesSelect.options].some(o=>o.value===l.sales)){const legacyOption=document.createElement('option');legacyOption.value=l.sales;legacyOption.textContent=l.sales+' (data lama)';salesSelect.appendChild(legacyOption);}salesSelect.value=l.sales||'';$('leadSource').value=l.source||'WhatsApp Story';$('leadStatus').value=l.status||'Baru';$('leadValue').value=l.value||0;$('leadNotes').value=l.notes||'';updateInvoiceRequirement();$('leadModalTitle').textContent='Edit Lead';$('leadModal').classList.remove('hidden')};
+  window.editPromo=id=>{const p=promos.find(x=>x.id===id);if(!p)return;
+    $('promoId').value=id;$('promoName').value=p.name||'';$('promoProduct').value=p.product||'';$('promoChannel').value=p.channel||'Brosur';
+    $('promoStart').value=p.startDate||'';$('promoEnd').value=p.endDate||'';$('promoTargetLead').value=num(p.targetLead);$('promoTarget').value=num(p.targetClosing);
+    $('promoPrinted').value=num(p.printed);$('promoDistributed').value=num(p.distributed);$('promoLocation').value=p.location||'';$('promoAudience').value=p.audience||'';
+    const componentTotal=num(p.printCost)+num(p.distributionCost)+num(p.otherCost);
+    $('promoPrintCost').value=num(p.printCost);$('promoDistributionCost').value=num(p.distributionCost);
+    $('promoOtherCost').value=componentTotal>0?num(p.otherCost):num(p.cost);
+    $('promoOffer').value=p.offer||'';updatePromoCostDisplay();$('promoModalTitle').textContent='Edit Promo';$('promoModal').classList.remove('hidden')
+  };
+  window.editLead=id=>{const l=leads.find(x=>x.id===id);if(!l)return;fillPromoSelect();
+    $('leadId').value=id;$('leadDate').value=l.date||'';$('leadPromo').value=l.promoId||'';$('leadCustomer').value=l.customer||'';$('leadContact').value=l.contact||'';
+    $('leadCustomerType').value=l.customerType||'Tidak Diketahui';$('leadProduct').value=l.productNeed||'';$('leadInvoice').value=l.invoiceCode||'';
+    const salesSelect=$('leadSales');if(l.sales && ![...salesSelect.options].some(o=>o.value===l.sales)){const legacyOption=document.createElement('option');legacyOption.value=l.sales;legacyOption.textContent=l.sales+' (data lama)';salesSelect.appendChild(legacyOption);}salesSelect.value=l.sales||'';
+    $('leadSource').value=l.source||'WhatsApp Story';$('leadStatus').value=l.status||'Baru';$('leadFollowUpDate').value=l.followUpDate||'';$('leadLostReason').value=l.lostReason||'';
+    $('leadValue').value=num(l.value);$('leadHpp').value=num(l.hpp);$('leadNotes').value=l.notes||'';updateLeadRequirements();$('leadModalTitle').textContent='Edit Lead';$('leadModal').classList.remove('hidden')
+  };
   window.removePromo=async id=>{if(!confirm('Hapus promo ini? Lead terkait tidak otomatis dihapus.'))return;if(demoMode){promos=promos.filter(p=>p.id!==id);saveDemo()}else await deleteDoc(doc(db,'promos',id))};
   window.removeLead=async id=>{if(!confirm('Hapus lead ini?'))return;if(demoMode){leads=leads.filter(l=>l.id!==id);saveDemo()}else await deleteDoc(doc(db,'promoLeads',id))};
 
-  const viewMeta={dashboard:['Dashboard Promo','Ringkasan performa campaign dan closing.'],promos:['Semua Promo','Kelola campaign dan lihat efektivitasnya.'],leads:['Lead & Closing','Pantau perjalanan prospek sampai closing atau lost.'],reports:['Analisis Bulanan','Evaluasi conversion, ROI, target dan rekomendasi.']};
+  const viewMeta={dashboard:['Dashboard Promo','Ringkasan performa campaign dan closing.'],promos:['Semua Promo','Kelola campaign dan lihat efektivitasnya.'],leads:['Lead & Closing','Pantau perjalanan prospek sampai closing atau lost.'],reports:['Analisis Bulanan','Evaluasi response rate, conversion, ROAS, sales dan penyebab Lost.']};
   window.setView=v=>{document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(v+'View').classList.remove('hidden');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));$('pageTitle').textContent=viewMeta[v][0];$('pageSubtitle').textContent=viewMeta[v][1]};
   document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>setView(b.dataset.view));
   $('monthFilter').onchange=()=>{renderDashboard();renderPromos();renderLeads();renderReports()};
