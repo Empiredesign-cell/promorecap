@@ -92,7 +92,10 @@
     <div class="field" style="margin-top:12px"><label>Password</label><input id="loginPassword" type="password" placeholder="••••••••"></div>
     <button id="loginBtn" class="btn primary" style="width:100%;margin-top:16px">Masuk</button>
     <button id="demoBtn" class="btn hidden" style="width:100%;margin-top:10px">Masuk Demo</button>
-    <p id="loginError" style="color:#fca5a5;font-size:12px"></p>
+    <p id="loginError" style="color:#fca5a5;font-size:12px;line-height:1.5"></p>
+    <div id="firebaseStatus" style="margin-top:8px;font-size:11px;color:#94a3b8;line-height:1.5">
+      Menghubungkan ke Firebase...
+    </div>
   </div>
 </section>
 
@@ -307,9 +310,8 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-  import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
   import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
   // =========================================================
   // 1) GANTI CONFIG INI DENGAN CONFIG FIREBASE PROJECT KAMU
@@ -568,21 +570,119 @@
   }
   function renderAll(){ fillMonthFilter(); fillPromoSelect(); renderDashboard(); renderPromos(); renderLeads(); renderReports(); }
 
+  function friendlyAuthError(err){
+    const code=err?.code||'';
+    const map={
+      'auth/invalid-credential':'Email atau password salah, atau akun belum dibuat di Firebase Authentication.',
+      'auth/user-not-found':'Akun tidak ditemukan di Firebase Authentication.',
+      'auth/wrong-password':'Password salah.',
+      'auth/invalid-email':'Format email tidak valid.',
+      'auth/missing-password':'Password belum diisi.',
+      'auth/operation-not-allowed':'Provider Email/Password belum diaktifkan di Firebase Authentication.',
+      'auth/unauthorized-domain':`Domain website ini belum masuk Authorized domains Firebase Authentication. Domain saat ini: ${location.hostname||'local file'}.`,
+      'auth/network-request-failed':'Koneksi ke Firebase gagal. Periksa internet, firewall, atau ad-blocker.',
+      'auth/too-many-requests':'Percobaan login terlalu banyak. Tunggu sebentar lalu coba lagi.',
+      'auth/api-key-not-valid':'Firebase API key tidak valid.',
+      'auth/invalid-api-key':'Firebase API key tidak valid.',
+      'auth/configuration-not-found':'Konfigurasi Firebase Authentication untuk project ini belum tersedia.',
+      'auth/internal-error':'Firebase mengalami internal error. Coba reload halaman.'
+    };
+    return map[code] || `${err?.message||'Error tidak diketahui'}${code?` [${code}]`:''}`;
+  }
+
   async function initFirebase(){
-    const app=initializeApp(firebaseConfig); db=getFirestore(app); auth=getAuth(app);
-    isSupported().then(ok => { if (ok) getAnalytics(app); }).catch(() => {});
-    onAuthStateChanged(auth,user=>{ if(user){ showApp(); subscribeFirestore(); } else showLogin(); });
+    try{
+      const app=initializeApp(firebaseConfig);
+      db=getFirestore(app);
+      auth=getAuth(app);
+
+      // Keep the user logged in on this browser.
+      await setPersistence(auth,browserLocalPersistence);
+
+      $('firebaseStatus').innerHTML=
+        `Firebase siap • Project: <b>${esc(firebaseConfig.projectId)}</b>`;
+
+      onAuthStateChanged(auth,user=>{
+        if(user){
+          $('loginError').textContent='';
+          showApp();
+          subscribeFirestore();
+        }else{
+          showLogin();
+        }
+      },err=>{
+        console.error('Auth state error:',err);
+        showLogin();
+        $('firebaseStatus').textContent='Firebase Auth tidak dapat diinisialisasi.';
+        $('loginError').textContent='Firebase Auth error: '+friendlyAuthError(err);
+      });
+    }catch(err){
+      console.error('Firebase init error:',err);
+      auth=null; db=null;
+      showLogin();
+      $('firebaseStatus').textContent='Gagal terhubung ke Firebase.';
+      $('loginError').textContent='Firebase init gagal: '+friendlyAuthError(err);
+    }
   }
   function subscribeFirestore(){
+    if(!db)return;
     if(unsubPromos)unsubPromos(); if(unsubLeads)unsubLeads();
-    unsubPromos=onSnapshot(collection(db,'promos'),snap=>{promos=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();});
-    unsubLeads=onSnapshot(collection(db,'promoLeads'),snap=>{leads=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();});
+
+    unsubPromos=onSnapshot(
+      collection(db,'promos'),
+      snap=>{promos=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();},
+      err=>{console.error('Firestore promos error:',err);alert('Login berhasil, tetapi data Promo tidak bisa dibaca: '+(err.message||err.code));}
+    );
+
+    unsubLeads=onSnapshot(
+      collection(db,'promoLeads'),
+      snap=>{leads=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();},
+      err=>{console.error('Firestore leads error:',err);alert('Login berhasil, tetapi data Lead tidak bisa dibaca: '+(err.message||err.code));}
+    );
   }
 
   function showLogin(){ $('loginScreen').classList.remove('hidden'); $('appScreen').classList.add('hidden'); if(demoMode){$('demoNotice').classList.remove('hidden');$('demoBtn').classList.remove('hidden');$('loginBtn').classList.add('hidden');$('loginEmail').parentElement.classList.add('hidden');$('loginPassword').parentElement.classList.add('hidden');} }
   function showApp(){ $('loginScreen').classList.add('hidden'); $('appScreen').classList.remove('hidden'); }
 
-  $('loginBtn').onclick=async()=>{ try{$('loginError').textContent='';await signInWithEmailAndPassword(auth,$('loginEmail').value,$('loginPassword').value)}catch(e){$('loginError').textContent='Login gagal: '+e.message} };
+  $('loginBtn').onclick=async()=>{
+    const email=$('loginEmail').value.trim();
+    const password=$('loginPassword').value;
+
+    $('loginError').textContent='';
+
+    if(!auth){
+      $('loginError').textContent='Firebase Auth belum siap. Reload halaman atau periksa konfigurasi Firebase.';
+      return;
+    }
+    if(!email){
+      $('loginError').textContent='Email wajib diisi.';
+      $('loginEmail').focus();
+      return;
+    }
+    if(!password){
+      $('loginError').textContent='Password wajib diisi.';
+      $('loginPassword').focus();
+      return;
+    }
+
+    const btn=$('loginBtn');
+    const original=btn.textContent;
+    btn.disabled=true;
+    btn.textContent='Menghubungkan...';
+
+    try{
+      await signInWithEmailAndPassword(auth,email,password);
+    }catch(e){
+      console.error('Login error:',e);
+      $('loginError').textContent='Login gagal: '+friendlyAuthError(e);
+    }finally{
+      btn.disabled=false;
+      btn.textContent=original;
+    }
+  };
+  $('loginPassword').addEventListener('keydown',e=>{
+    if(e.key==='Enter')$('loginBtn').click();
+  });
   $('demoBtn').onclick=()=>{showApp();loadDemo()};
   $('logoutBtn').onclick=async()=>{if(demoMode){showLogin()}else await signOut(auth)};
   $('themeBtn').onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'':'dark';localStorage.setItem('pp_theme',document.documentElement.dataset.theme)};
@@ -751,7 +851,17 @@
   $('monthFilter').onchange=()=>{renderDashboard();renderPromos();renderLeads();renderReports()};
   $('statusFilter').onchange=renderLeads;
 
-  if(firebaseReady){ demoMode=false; initFirebase(); } else { demoMode=true; showLogin(); }
+  if(firebaseReady){
+    demoMode=false;
+    initFirebase().catch(err=>{
+      console.error('Unexpected Firebase startup error:',err);
+      showLogin();
+      $('loginError').textContent='Startup Firebase gagal: '+friendlyAuthError(err);
+    });
+  }else{
+    demoMode=true;
+    showLogin();
+  }
 </script>
 </body>
 </html>

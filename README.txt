@@ -1,38 +1,15 @@
-RECAPPROMO V2 — Cipta Digital
 
-FITUR BARU
-- Target lead per promo
-- Jumlah brosur dicetak & disebar
-- Lokasi distribusi & target customer
-- Breakdown biaya cetak, distribusi, biaya lain
-- Response Rate
-- Cost per Lead (CPL)
-- Cost per Acquisition / Closing (CPA)
-- ROAS (Omzet / Biaya Promo)
-- Jenis Customer: Baru / Existing
-- Produk / kebutuhan customer
-- Jadwal follow-up berikutnya
-- Alasan Lost terstruktur
-- HPP per closing
-- Kode invoice wajib untuk Closing
-- Validasi invoice duplikat
-- Nilai order wajib > 0 saat Closing
-- Dashboard performa Sales/PIC
-- Analisis alasan Lost
-- Export Lead & Closing ke CSV
-- Reminder visual untuk follow-up terlambat
 
-DATABASE
-Collection lama tetap digunakan:
-- promos
-- promoLeads
+LOGIN FIX
+- Firebase Analytics dikeluarkan dari critical login path.
+- Auth persistence menggunakan browserLocalPersistence.
+- Pesan error Firebase ditampilkan secara jelas.
+- Error Firestore dibedakan dari error login.
+- Mendukung Enter untuk login.
+- Jika login gagal, lihat pesan yang muncul di bawah tombol login.
 
-Field baru bersifat backward-compatible. Data lama tetap bisa dibaca.
-
-CATATAN METRIK
-- Response Rate = Lead / Jumlah materi promo disebar
-- Conversion = Closing / Lead
-- CPL = Biaya Promo / Lead
-- CPA = Biaya Promo / Closing
-- ROAS = Omzet Promo / Biaya Promo
-- HPP disimpan untuk pengembangan analisis laba berikutnya.
+FIREBASE AUTH CHECKLIST
+1. Firebase Console > Authentication > Sign-in method > Email/Password = Enabled.
+2. Firebase Console > Authentication > Users > pastikan akun admin sudah dibuat.
+3. Authentication > Settings > Authorized domains > tambahkan domain deployment bila dibutuhkan.
+4. Firestore Rules harus mengizinkan request.auth != null untuk promos dan promoLeads.
