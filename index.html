@@ -87,14 +87,14 @@
     </div>
     <h2>Masuk Dashboard</h2>
     <p class="muted">Pantau lead, closing, omzet, conversion rate dan efektivitas promo.</p>
-    <div id="demoNotice" class="notice hidden">Firebase belum dikonfigurasi. Aplikasi berjalan dalam <b>Demo Mode</b> menggunakan localStorage browser.</div>
+    <div id="demoNotice" class="notice hidden">Supabase belum dikonfigurasi lengkap. Aplikasi berjalan dalam <b>Demo Mode</b> menggunakan localStorage browser.</div>
     <div class="field"><label>Email</label><input id="loginEmail" type="email" placeholder="admin@perusahaan.com"></div>
     <div class="field" style="margin-top:12px"><label>Password</label><input id="loginPassword" type="password" placeholder="••••••••"></div>
     <button id="loginBtn" class="btn primary" style="width:100%;margin-top:16px">Masuk</button>
     <button id="demoBtn" class="btn hidden" style="width:100%;margin-top:10px">Masuk Demo</button>
     <p id="loginError" style="color:#fca5a5;font-size:12px;line-height:1.5"></p>
-    <div id="firebaseStatus" style="margin-top:8px;font-size:11px;color:#94a3b8;line-height:1.5">
-      Menghubungkan ke Firebase...
+    <div id="backendStatus" style="margin-top:8px;font-size:11px;color:#94a3b8;line-height:1.5">
+      Menghubungkan ke Supabase...
     </div>
   </div>
 </section>
@@ -309,28 +309,34 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
   // =========================================================
-  // 1) GANTI CONFIG INI DENGAN CONFIG FIREBASE PROJECT KAMU
+  // SUPABASE CONFIG
+  // Project URL masih perlu diisi, contoh:
+  // https://abcdefghijk.supabase.co
   // =========================================================
-  const firebaseConfig = {
-    apiKey: "AIzaSyAC9GHlF2q9emTN0BjQ1MfddFBwDYU1d-c",
-    authDomain: "promorecap.firebaseapp.com",
-    projectId: "promorecap",
-    storageBucket: "promorecap.firebasestorage.app",
-    messagingSenderId: "106400655795",
-    appId: "1:106400655795:web:67f883058cec4776f283c6",
-    measurementId: "G-9F48YS2PBZ"
-  };
+  const SUPABASE_URL = "PASTE_SUPABASE_PROJECT_URL";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_AnSLl21BYeNQXhPYW4QzYg_MfohWYa0";
 
-  const firebaseReady = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId);
-  let db = null, auth = null;
+  // SECURITY:
+  // Jangan pernah memasukkan Secret Key / service_role key ke file HTML.
+  const supabaseReady =
+    /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(SUPABASE_URL) &&
+    SUPABASE_PUBLISHABLE_KEY.startsWith("sb_publishable_");
+
+  const supabaseClient = supabaseReady
+    ? createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      })
+    : null;
+
   let promos = [], leads = [];
-  let unsubPromos = null, unsubLeads = null;
-  let demoMode = !firebaseReady;
+  let demoMode = !supabaseReady;
 
   const $ = id => document.getElementById(id);
   const money = n => new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(n||0));
@@ -570,126 +576,257 @@
   }
   function renderAll(){ fillMonthFilter(); fillPromoSelect(); renderDashboard(); renderPromos(); renderLeads(); renderReports(); }
 
-  function friendlyAuthError(err){
-    const code=err?.code||'';
-    const map={
-      'auth/invalid-credential':'Email atau password salah, atau akun belum dibuat di Firebase Authentication.',
-      'auth/user-not-found':'Akun tidak ditemukan di Firebase Authentication.',
-      'auth/wrong-password':'Password salah.',
-      'auth/invalid-email':'Format email tidak valid.',
-      'auth/missing-password':'Password belum diisi.',
-      'auth/operation-not-allowed':'Provider Email/Password belum diaktifkan di Firebase Authentication.',
-      'auth/unauthorized-domain':`Domain website ini belum masuk Authorized domains Firebase Authentication. Domain saat ini: ${location.hostname||'local file'}.`,
-      'auth/network-request-failed':'Koneksi ke Firebase gagal. Periksa internet, firewall, atau ad-blocker.',
-      'auth/too-many-requests':'Percobaan login terlalu banyak. Tunggu sebentar lalu coba lagi.',
-      'auth/api-key-not-valid':'Firebase API key tidak valid.',
-      'auth/invalid-api-key':'Firebase API key tidak valid.',
-      'auth/configuration-not-found':'Konfigurasi Firebase Authentication untuk project ini belum tersedia.',
-      'auth/internal-error':'Firebase mengalami internal error. Coba reload halaman.'
+
+
+  // ==========================
+  // SUPABASE DATA ADAPTERS
+  // ==========================
+  function promoFromRow(r){
+    return {
+      id:r.id,
+      name:r.name||'',
+      product:r.product||'',
+      channel:r.channel||'',
+      startDate:r.start_date||'',
+      endDate:r.end_date||'',
+      targetLead:num(r.target_lead),
+      targetClosing:num(r.target_closing),
+      printed:num(r.printed),
+      distributed:num(r.distributed),
+      location:r.location||'',
+      audience:r.audience||'',
+      printCost:num(r.print_cost),
+      distributionCost:num(r.distribution_cost),
+      otherCost:num(r.other_cost),
+      cost:num(r.cost),
+      offer:r.offer||''
     };
-    return map[code] || `${err?.message||'Error tidak diketahui'}${code?` [${code}]`:''}`;
   }
 
-  async function initFirebase(){
+  function promoToRow(p){
+    return {
+      name:p.name,
+      product:p.product,
+      channel:p.channel,
+      start_date:p.startDate,
+      end_date:p.endDate,
+      target_lead:num(p.targetLead),
+      target_closing:num(p.targetClosing),
+      printed:num(p.printed),
+      distributed:num(p.distributed),
+      location:p.location||null,
+      audience:p.audience||null,
+      print_cost:num(p.printCost),
+      distribution_cost:num(p.distributionCost),
+      other_cost:num(p.otherCost),
+      cost:num(p.cost),
+      offer:p.offer||null,
+      updated_at:new Date().toISOString()
+    };
+  }
+
+  function leadFromRow(r){
+    return {
+      id:r.id,
+      date:r.lead_date||'',
+      promoId:r.promo_id||'',
+      invoiceCode:r.invoice_code||'',
+      customer:r.customer||'',
+      contact:r.contact||'',
+      customerType:r.customer_type||'Tidak Diketahui',
+      productNeed:r.product_need||'',
+      sales:r.sales||'',
+      source:r.source||'',
+      status:r.status||'Baru',
+      followUpDate:r.follow_up_date||'',
+      lostReason:r.lost_reason||'',
+      value:num(r.order_value),
+      hpp:num(r.hpp),
+      notes:r.notes||''
+    };
+  }
+
+  function leadToRow(l){
+    return {
+      promo_id:l.promoId,
+      lead_date:l.date,
+      invoice_code:l.invoiceCode||null,
+      customer:l.customer,
+      contact:l.contact||null,
+      customer_type:l.customerType||'Tidak Diketahui',
+      product_need:l.productNeed||null,
+      sales:l.sales,
+      source:l.source||null,
+      status:l.status,
+      follow_up_date:l.followUpDate||null,
+      lost_reason:l.lostReason||null,
+      order_value:num(l.value),
+      hpp:num(l.hpp),
+      notes:l.notes||null,
+      updated_at:new Date().toISOString()
+    };
+  }
+
+  function friendlySupabaseError(error){
+    const msg=String(error?.message||error||'Error tidak diketahui');
+    const low=msg.toLowerCase();
+
+    if(low.includes('invalid login credentials'))
+      return 'Email atau password salah, atau user belum dibuat di Supabase Auth.';
+    if(low.includes('email not confirmed'))
+      return 'Email user belum dikonfirmasi di Supabase Auth.';
+    if(low.includes('row-level security') || low.includes('rls'))
+      return 'Akses ditolak oleh Row Level Security. Jalankan file supabase_schema.sql yang saya sertakan.';
+    if(low.includes('duplicate key') || low.includes('promo_leads_unique_invoice'))
+      return 'Kode invoice sudah pernah tercatat.';
+    if(low.includes('relation') && low.includes('does not exist'))
+      return 'Tabel Supabase belum dibuat. Jalankan supabase_schema.sql di SQL Editor.';
+    if(low.includes('failed to fetch') || low.includes('network'))
+      return 'Tidak dapat terhubung ke Supabase. Periksa Project URL, internet, atau konfigurasi domain.';
+    return msg;
+  }
+
+  async function loadData(){
+    if(demoMode){loadDemo();return;}
+
+    const [promoRes,leadRes]=await Promise.all([
+      supabaseClient.from('promos').select('*').order('created_at',{ascending:false}),
+      supabaseClient.from('promo_leads').select('*').order('lead_date',{ascending:false})
+    ]);
+
+    if(promoRes.error)throw promoRes.error;
+    if(leadRes.error)throw leadRes.error;
+
+    promos=(promoRes.data||[]).map(promoFromRow);
+    leads=(leadRes.data||[]).map(leadFromRow);
+    renderAll();
+  }
+
+  async function initSupabase(){
+    if(!supabaseReady){
+      demoMode=true;
+      showLogin();
+      $('backendStatus').innerHTML=
+        'Supabase belum aktif • <b>Project URL belum diisi</b>';
+      return;
+    }
+
+    demoMode=false;
+    $('backendStatus').innerHTML='Menghubungkan ke Supabase...';
+
     try{
-      const app=initializeApp(firebaseConfig);
-      db=getFirestore(app);
-      auth=getAuth(app);
+      const {data:{session},error}=await supabaseClient.auth.getSession();
+      if(error)throw error;
 
-      // Keep the user logged in on this browser.
-      await setPersistence(auth,browserLocalPersistence);
+      $('backendStatus').innerHTML='Supabase siap';
 
-      $('firebaseStatus').innerHTML=
-        `Firebase siap • Project: <b>${esc(firebaseConfig.projectId)}</b>`;
+      if(session){
+        showApp();
+        await loadData();
+      }else{
+        showLogin();
+      }
 
-      onAuthStateChanged(auth,user=>{
-        if(user){
+      supabaseClient.auth.onAuthStateChange(async(event,sessionNow)=>{
+        if(event==='SIGNED_IN' && sessionNow){
           $('loginError').textContent='';
           showApp();
-          subscribeFirestore();
-        }else{
+          try{await loadData();}
+          catch(err){
+            console.error(err);
+            alert('Login berhasil, tetapi data tidak dapat dibaca: '+friendlySupabaseError(err));
+          }
+        }
+
+        if(event==='SIGNED_OUT'){
+          promos=[];leads=[];
           showLogin();
         }
-      },err=>{
-        console.error('Auth state error:',err);
-        showLogin();
-        $('firebaseStatus').textContent='Firebase Auth tidak dapat diinisialisasi.';
-        $('loginError').textContent='Firebase Auth error: '+friendlyAuthError(err);
       });
     }catch(err){
-      console.error('Firebase init error:',err);
-      auth=null; db=null;
+      console.error('Supabase init error:',err);
       showLogin();
-      $('firebaseStatus').textContent='Gagal terhubung ke Firebase.';
-      $('loginError').textContent='Firebase init gagal: '+friendlyAuthError(err);
+      $('backendStatus').textContent='Gagal terhubung ke Supabase.';
+      $('loginError').textContent='Supabase error: '+friendlySupabaseError(err);
     }
   }
-  function subscribeFirestore(){
-    if(!db)return;
-    if(unsubPromos)unsubPromos(); if(unsubLeads)unsubLeads();
 
-    unsubPromos=onSnapshot(
-      collection(db,'promos'),
-      snap=>{promos=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();},
-      err=>{console.error('Firestore promos error:',err);alert('Login berhasil, tetapi data Promo tidak bisa dibaca: '+(err.message||err.code));}
-    );
+  function showLogin(){
+    $('loginScreen').classList.remove('hidden');
+    $('appScreen').classList.add('hidden');
 
-    unsubLeads=onSnapshot(
-      collection(db,'promoLeads'),
-      snap=>{leads=snap.docs.map(d=>({id:d.id,...d.data()}));renderAll();},
-      err=>{console.error('Firestore leads error:',err);alert('Login berhasil, tetapi data Lead tidak bisa dibaca: '+(err.message||err.code));}
-    );
+    if(demoMode){
+      $('demoNotice').classList.remove('hidden');
+      $('demoBtn').classList.remove('hidden');
+      $('loginBtn').classList.add('hidden');
+      $('loginEmail').parentElement.classList.add('hidden');
+      $('loginPassword').parentElement.classList.add('hidden');
+    }else{
+      $('demoNotice').classList.add('hidden');
+      $('demoBtn').classList.add('hidden');
+      $('loginBtn').classList.remove('hidden');
+      $('loginEmail').parentElement.classList.remove('hidden');
+      $('loginPassword').parentElement.classList.remove('hidden');
+    }
   }
 
-  function showLogin(){ $('loginScreen').classList.remove('hidden'); $('appScreen').classList.add('hidden'); if(demoMode){$('demoNotice').classList.remove('hidden');$('demoBtn').classList.remove('hidden');$('loginBtn').classList.add('hidden');$('loginEmail').parentElement.classList.add('hidden');$('loginPassword').parentElement.classList.add('hidden');} }
-  function showApp(){ $('loginScreen').classList.add('hidden'); $('appScreen').classList.remove('hidden'); }
+  function showApp(){
+    $('loginScreen').classList.add('hidden');
+    $('appScreen').classList.remove('hidden');
+  }
 
+  // ==========================
+  // AUTH
+  // ==========================
   $('loginBtn').onclick=async()=>{
     const email=$('loginEmail').value.trim();
     const password=$('loginPassword').value;
-
     $('loginError').textContent='';
 
-    if(!auth){
-      $('loginError').textContent='Firebase Auth belum siap. Reload halaman atau periksa konfigurasi Firebase.';
+    if(!supabaseClient){
+      $('loginError').textContent='Project URL Supabase belum diisi di file HTML.';
       return;
     }
-    if(!email){
-      $('loginError').textContent='Email wajib diisi.';
-      $('loginEmail').focus();
-      return;
-    }
-    if(!password){
-      $('loginError').textContent='Password wajib diisi.';
-      $('loginPassword').focus();
-      return;
-    }
+    if(!email){$('loginError').textContent='Email wajib diisi.';$('loginEmail').focus();return;}
+    if(!password){$('loginError').textContent='Password wajib diisi.';$('loginPassword').focus();return;}
 
     const btn=$('loginBtn');
     const original=btn.textContent;
-    btn.disabled=true;
-    btn.textContent='Menghubungkan...';
+    btn.disabled=true;btn.textContent='Menghubungkan...';
 
     try{
-      await signInWithEmailAndPassword(auth,email,password);
-    }catch(e){
-      console.error('Login error:',e);
-      $('loginError').textContent='Login gagal: '+friendlyAuthError(e);
+      const {error}=await supabaseClient.auth.signInWithPassword({email,password});
+      if(error)throw error;
+    }catch(err){
+      console.error('Login error:',err);
+      $('loginError').textContent='Login gagal: '+friendlySupabaseError(err);
     }finally{
-      btn.disabled=false;
-      btn.textContent=original;
+      btn.disabled=false;btn.textContent=original;
     }
   };
+
   $('loginPassword').addEventListener('keydown',e=>{
     if(e.key==='Enter')$('loginBtn').click();
   });
-  $('demoBtn').onclick=()=>{showApp();loadDemo()};
-  $('logoutBtn').onclick=async()=>{if(demoMode){showLogin()}else await signOut(auth)};
-  $('themeBtn').onclick=()=>{document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'':'dark';localStorage.setItem('pp_theme',document.documentElement.dataset.theme)};
+
+  $('demoBtn').onclick=()=>{showApp();loadDemo();};
+  $('logoutBtn').onclick=async()=>{
+    if(demoMode){showLogin();return;}
+    const {error}=await supabaseClient.auth.signOut();
+    if(error)alert('Logout gagal: '+friendlySupabaseError(error));
+  };
+
+  $('themeBtn').onclick=()=>{
+    document.documentElement.dataset.theme=document.documentElement.dataset.theme==='dark'?'':'dark';
+    localStorage.setItem('pp_theme',document.documentElement.dataset.theme);
+  };
   document.documentElement.dataset.theme=localStorage.getItem('pp_theme')||'';
 
   window.closeModal=id=>$(id).classList.add('hidden');
 
+  // ==========================
+  // FORM HELPERS
+  // ==========================
   function updateLeadRequirements(){
     const status=$('leadStatus').value;
     const isClosing=status==='Closing';
@@ -728,17 +865,22 @@
 
   async function invoiceExists(invoiceCode,currentId=''){
     if(!invoiceCode)return false;
-    const local=leads.some(l=>l.id!==currentId && String(l.invoiceCode||'').toUpperCase()===invoiceCode.toUpperCase());
+
+    const local=leads.some(l=>
+      l.id!==currentId &&
+      String(l.invoiceCode||'').toUpperCase()===invoiceCode.toUpperCase()
+    );
     if(local)return true;
     if(demoMode)return false;
-    try{
-      const q=query(collection(db,'promoLeads'),where('invoiceCode','==',invoiceCode.toUpperCase()));
-      const snap=await getDocs(q);
-      return snap.docs.some(d=>d.id!==currentId);
-    }catch(e){
-      console.warn('Invoice duplicate check fallback:',e);
-      return false;
-    }
+
+    const {data,error}=await supabaseClient
+      .from('promo_leads')
+      .select('id')
+      .ilike('invoice_code',invoiceCode)
+      .limit(2);
+
+    if(error)throw error;
+    return (data||[]).some(row=>row.id!==currentId);
   }
 
   function exportLeadsCsv(){
@@ -757,39 +899,108 @@
   }
 
   $('leadStatus').addEventListener('change',updateLeadRequirements);
-  $('leadInvoice').addEventListener('input',()=>$('leadInvoice').setCustomValidity(''));
-  ['promoPrintCost','promoDistributionCost','promoOtherCost'].forEach(id=>$(id).addEventListener('input',updatePromoCostDisplay));
+  $('leadInvoice').addEventListener('input',()=> $('leadInvoice').setCustomValidity(''));
+  ['promoPrintCost','promoDistributionCost','promoOtherCost'].forEach(id=>
+    $(id).addEventListener('input',updatePromoCostDisplay)
+  );
   $('exportCsvBtn').addEventListener('click',exportLeadsCsv);
 
-  $('addPromoBtn').onclick=()=>{ $('promoForm').reset();$('promoId').value='';$('promoStart').value=today();$('promoEnd').value=today();$('promoTargetLead').value=0;$('promoTarget').value=10;$('promoPrinted').value=0;$('promoDistributed').value=0;$('promoPrintCost').value=0;$('promoDistributionCost').value=0;$('promoOtherCost').value=0;updatePromoCostDisplay();$('promoModalTitle').textContent='Tambah Promo';$('promoModal').classList.remove('hidden'); };
-  $('addLeadBtn').onclick=()=>{ $('leadForm').reset();$('leadId').value='';$('leadDate').value=today();$('leadValue').value=0;$('leadHpp').value=0;$('leadInvoice').value='';$('leadCustomerType').value='Baru';$('leadModalTitle').textContent='Tambah Lead / Closing';fillPromoSelect();updateLeadRequirements();$('leadModal').classList.remove('hidden'); };
+  $('addPromoBtn').onclick=()=>{
+    $('promoForm').reset();
+    $('promoId').value='';
+    $('promoStart').value=today();
+    $('promoEnd').value=today();
+    $('promoTargetLead').value=0;
+    $('promoTarget').value=10;
+    $('promoPrinted').value=0;
+    $('promoDistributed').value=0;
+    $('promoPrintCost').value=0;
+    $('promoDistributionCost').value=0;
+    $('promoOtherCost').value=0;
+    updatePromoCostDisplay();
+    $('promoModalTitle').textContent='Tambah Promo';
+    $('promoModal').classList.remove('hidden');
+  };
 
+  $('addLeadBtn').onclick=()=>{
+    $('leadForm').reset();
+    $('leadId').value='';
+    $('leadDate').value=today();
+    $('leadValue').value=0;
+    $('leadHpp').value=0;
+    $('leadInvoice').value='';
+    $('leadCustomerType').value='Baru';
+    $('leadModalTitle').textContent='Tambah Lead / Closing';
+    fillPromoSelect();
+    updateLeadRequirements();
+    $('leadModal').classList.remove('hidden');
+  };
+
+  // ==========================
+  // CRUD PROMO
+  // ==========================
   $('promoForm').onsubmit=async e=>{
     e.preventDefault();
+
     const printCost=num($('promoPrintCost').value);
     const distributionCost=num($('promoDistributionCost').value);
     const otherCost=num($('promoOtherCost').value);
     const cost=printCost+distributionCost+otherCost;
-    const printed=num($('promoPrinted').value), distributed=num($('promoDistributed').value);
+    const printed=num($('promoPrinted').value);
+    const distributed=num($('promoDistributed').value);
+
     if(distributed>printed && printed>0){
       $('promoDistributed').setCustomValidity('Jumlah yang disebar tidak boleh melebihi jumlah yang dicetak.');
-      $('promoDistributed').reportValidity();return;
+      $('promoDistributed').reportValidity();
+      return;
     }
     $('promoDistributed').setCustomValidity('');
+
     const data={
-      name:$('promoName').value.trim(),product:$('promoProduct').value.trim(),channel:$('promoChannel').value,
-      startDate:$('promoStart').value,endDate:$('promoEnd').value,targetLead:num($('promoTargetLead').value),targetClosing:num($('promoTarget').value),
-      printed,distributed,location:$('promoLocation').value.trim(),audience:$('promoAudience').value.trim(),
-      printCost,distributionCost,otherCost,cost,offer:$('promoOffer').value.trim(),
-      updatedAt:demoMode?Date.now():serverTimestamp()
+      name:$('promoName').value.trim(),
+      product:$('promoProduct').value.trim(),
+      channel:$('promoChannel').value,
+      startDate:$('promoStart').value,
+      endDate:$('promoEnd').value,
+      targetLead:num($('promoTargetLead').value),
+      targetClosing:num($('promoTarget').value),
+      printed,distributed,
+      location:$('promoLocation').value.trim(),
+      audience:$('promoAudience').value.trim(),
+      printCost,distributionCost,otherCost,cost,
+      offer:$('promoOffer').value.trim()
     };
+
     const id=$('promoId').value;
-    if(demoMode){ if(id){promos=promos.map(p=>p.id===id?{...p,...data}:p)}else promos.push({id:'p'+Date.now(),...data});saveDemo();}
-    else { if(id)await updateDoc(doc(db,'promos',id),data); else await addDoc(collection(db,'promos'),{...data,createdAt:serverTimestamp()}); }
-    closeModal('promoModal');
+
+    try{
+      if(demoMode){
+        if(id)promos=promos.map(p=>p.id===id?{...p,...data}:p);
+        else promos.push({id:'p'+Date.now(),...data});
+        saveDemo();
+      }else{
+        const row=promoToRow(data);
+        let res;
+        if(id){
+          res=await supabaseClient.from('promos').update(row).eq('id',id);
+        }else{
+          res=await supabaseClient.from('promos').insert({...row,created_at:new Date().toISOString()});
+        }
+        if(res.error)throw res.error;
+        await loadData();
+      }
+      closeModal('promoModal');
+    }catch(err){
+      alert('Gagal menyimpan promo: '+friendlySupabaseError(err));
+    }
   };
+
+  // ==========================
+  // CRUD LEAD
+  // ==========================
   $('leadForm').onsubmit=async e=>{
     e.preventDefault();
+
     const status=$('leadStatus').value;
     const invoiceCode=$('leadInvoice').value.trim().toUpperCase();
     const value=num($('leadValue').value);
@@ -797,71 +1008,191 @@
     const id=$('leadId').value;
 
     if(status==='Closing' && !invoiceCode){
-      $('leadInvoice').focus();$('leadInvoice').setCustomValidity('Kode invoice wajib diisi untuk status Closing.');$('leadInvoice').reportValidity();return;
+      $('leadInvoice').focus();
+      $('leadInvoice').setCustomValidity('Kode invoice wajib diisi untuk status Closing.');
+      $('leadInvoice').reportValidity();return;
     }
     if(status==='Closing' && value<=0){
-      $('leadValue').focus();$('leadValue').setCustomValidity('Nilai order harus lebih dari 0 untuk status Closing.');$('leadValue').reportValidity();return;
+      $('leadValue').focus();
+      $('leadValue').setCustomValidity('Nilai order harus lebih dari 0 untuk status Closing.');
+      $('leadValue').reportValidity();return;
     }
     if(status==='Lost' && !lostReason){
-      $('leadLostReason').focus();$('leadLostReason').setCustomValidity('Pilih alasan Lost.');$('leadLostReason').reportValidity();return;
-    }
-    if(invoiceCode && await invoiceExists(invoiceCode,id)){
-      $('leadInvoice').focus();$('leadInvoice').setCustomValidity(`Invoice ${invoiceCode} sudah tercatat. Gunakan kode invoice lain.`);$('leadInvoice').reportValidity();return;
+      $('leadLostReason').focus();
+      $('leadLostReason').setCustomValidity('Pilih alasan Lost.');
+      $('leadLostReason').reportValidity();return;
     }
 
-    $('leadInvoice').setCustomValidity('');$('leadValue').setCustomValidity('');$('leadLostReason').setCustomValidity('');
+    try{
+      if(invoiceCode && await invoiceExists(invoiceCode,id)){
+        $('leadInvoice').focus();
+        $('leadInvoice').setCustomValidity(`Invoice ${invoiceCode} sudah tercatat. Gunakan kode invoice lain.`);
+        $('leadInvoice').reportValidity();return;
+      }
 
-    const data={
-      date:$('leadDate').value,promoId:$('leadPromo').value,invoiceCode,
-      customer:$('leadCustomer').value.trim(),contact:$('leadContact').value.trim(),
-      customerType:$('leadCustomerType').value,productNeed:$('leadProduct').value.trim(),
-      sales:$('leadSales').value,source:$('leadSource').value,status,
-      followUpDate:status==='Follow Up'?$('leadFollowUpDate').value:'',
-      lostReason:status==='Lost'?lostReason:'',
-      value:status==='Closing'?value:0,hpp:status==='Closing'?num($('leadHpp').value):0,
-      notes:$('leadNotes').value.trim(),updatedAt:demoMode?Date.now():serverTimestamp()
-    };
-    if(demoMode){if(id){leads=leads.map(l=>l.id===id?{...l,...data}:l)}else leads.push({id:'l'+Date.now(),...data});saveDemo();}
-    else {if(id)await updateDoc(doc(db,'promoLeads',id),data);else await addDoc(collection(db,'promoLeads'),{...data,createdAt:serverTimestamp()});}
-    closeModal('leadModal');
+      $('leadInvoice').setCustomValidity('');
+      $('leadValue').setCustomValidity('');
+      $('leadLostReason').setCustomValidity('');
+
+      const data={
+        date:$('leadDate').value,
+        promoId:$('leadPromo').value,
+        invoiceCode,
+        customer:$('leadCustomer').value.trim(),
+        contact:$('leadContact').value.trim(),
+        customerType:$('leadCustomerType').value,
+        productNeed:$('leadProduct').value.trim(),
+        sales:$('leadSales').value,
+        source:$('leadSource').value,
+        status,
+        followUpDate:status==='Follow Up'?$('leadFollowUpDate').value:'',
+        lostReason:status==='Lost'?lostReason:'',
+        value:status==='Closing'?value:0,
+        hpp:status==='Closing'?num($('leadHpp').value):0,
+        notes:$('leadNotes').value.trim()
+      };
+
+      if(demoMode){
+        if(id)leads=leads.map(l=>l.id===id?{...l,...data}:l);
+        else leads.push({id:'l'+Date.now(),...data});
+        saveDemo();
+      }else{
+        const row=leadToRow(data);
+        let res;
+        if(id){
+          res=await supabaseClient.from('promo_leads').update(row).eq('id',id);
+        }else{
+          res=await supabaseClient.from('promo_leads').insert({...row,created_at:new Date().toISOString()});
+        }
+        if(res.error)throw res.error;
+        await loadData();
+      }
+
+      closeModal('leadModal');
+    }catch(err){
+      alert('Gagal menyimpan lead: '+friendlySupabaseError(err));
+    }
   };
 
-  window.editPromo=id=>{const p=promos.find(x=>x.id===id);if(!p)return;
-    $('promoId').value=id;$('promoName').value=p.name||'';$('promoProduct').value=p.product||'';$('promoChannel').value=p.channel||'Brosur';
-    $('promoStart').value=p.startDate||'';$('promoEnd').value=p.endDate||'';$('promoTargetLead').value=num(p.targetLead);$('promoTarget').value=num(p.targetClosing);
-    $('promoPrinted').value=num(p.printed);$('promoDistributed').value=num(p.distributed);$('promoLocation').value=p.location||'';$('promoAudience').value=p.audience||'';
+  // ==========================
+  // EDIT / DELETE
+  // ==========================
+  window.editPromo=id=>{
+    const p=promos.find(x=>x.id===id);if(!p)return;
+    $('promoId').value=id;
+    $('promoName').value=p.name||'';
+    $('promoProduct').value=p.product||'';
+    $('promoChannel').value=p.channel||'Brosur';
+    $('promoStart').value=p.startDate||'';
+    $('promoEnd').value=p.endDate||'';
+    $('promoTargetLead').value=num(p.targetLead);
+    $('promoTarget').value=num(p.targetClosing);
+    $('promoPrinted').value=num(p.printed);
+    $('promoDistributed').value=num(p.distributed);
+    $('promoLocation').value=p.location||'';
+    $('promoAudience').value=p.audience||'';
+
     const componentTotal=num(p.printCost)+num(p.distributionCost)+num(p.otherCost);
-    $('promoPrintCost').value=num(p.printCost);$('promoDistributionCost').value=num(p.distributionCost);
+    $('promoPrintCost').value=num(p.printCost);
+    $('promoDistributionCost').value=num(p.distributionCost);
     $('promoOtherCost').value=componentTotal>0?num(p.otherCost):num(p.cost);
-    $('promoOffer').value=p.offer||'';updatePromoCostDisplay();$('promoModalTitle').textContent='Edit Promo';$('promoModal').classList.remove('hidden')
-  };
-  window.editLead=id=>{const l=leads.find(x=>x.id===id);if(!l)return;fillPromoSelect();
-    $('leadId').value=id;$('leadDate').value=l.date||'';$('leadPromo').value=l.promoId||'';$('leadCustomer').value=l.customer||'';$('leadContact').value=l.contact||'';
-    $('leadCustomerType').value=l.customerType||'Tidak Diketahui';$('leadProduct').value=l.productNeed||'';$('leadInvoice').value=l.invoiceCode||'';
-    const salesSelect=$('leadSales');if(l.sales && ![...salesSelect.options].some(o=>o.value===l.sales)){const legacyOption=document.createElement('option');legacyOption.value=l.sales;legacyOption.textContent=l.sales+' (data lama)';salesSelect.appendChild(legacyOption);}salesSelect.value=l.sales||'';
-    $('leadSource').value=l.source||'WhatsApp Story';$('leadStatus').value=l.status||'Baru';$('leadFollowUpDate').value=l.followUpDate||'';$('leadLostReason').value=l.lostReason||'';
-    $('leadValue').value=num(l.value);$('leadHpp').value=num(l.hpp);$('leadNotes').value=l.notes||'';updateLeadRequirements();$('leadModalTitle').textContent='Edit Lead';$('leadModal').classList.remove('hidden')
-  };
-  window.removePromo=async id=>{if(!confirm('Hapus promo ini? Lead terkait tidak otomatis dihapus.'))return;if(demoMode){promos=promos.filter(p=>p.id!==id);saveDemo()}else await deleteDoc(doc(db,'promos',id))};
-  window.removeLead=async id=>{if(!confirm('Hapus lead ini?'))return;if(demoMode){leads=leads.filter(l=>l.id!==id);saveDemo()}else await deleteDoc(doc(db,'promoLeads',id))};
+    $('promoOffer').value=p.offer||'';
+    updatePromoCostDisplay();
 
-  const viewMeta={dashboard:['Dashboard Promo','Ringkasan performa campaign dan closing.'],promos:['Semua Promo','Kelola campaign dan lihat efektivitasnya.'],leads:['Lead & Closing','Pantau perjalanan prospek sampai closing atau lost.'],reports:['Analisis Bulanan','Evaluasi response rate, conversion, ROAS, sales dan penyebab Lost.']};
-  window.setView=v=>{document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));$(v+'View').classList.remove('hidden');document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));$('pageTitle').textContent=viewMeta[v][0];$('pageSubtitle').textContent=viewMeta[v][1]};
+    $('promoModalTitle').textContent='Edit Promo';
+    $('promoModal').classList.remove('hidden');
+  };
+
+  window.editLead=id=>{
+    const l=leads.find(x=>x.id===id);if(!l)return;
+    fillPromoSelect();
+
+    $('leadId').value=id;
+    $('leadDate').value=l.date||'';
+    $('leadPromo').value=l.promoId||'';
+    $('leadCustomer').value=l.customer||'';
+    $('leadContact').value=l.contact||'';
+    $('leadCustomerType').value=l.customerType||'Tidak Diketahui';
+    $('leadProduct').value=l.productNeed||'';
+    $('leadInvoice').value=l.invoiceCode||'';
+
+    const salesSelect=$('leadSales');
+    if(l.sales && ![...salesSelect.options].some(o=>o.value===l.sales)){
+      const legacyOption=document.createElement('option');
+      legacyOption.value=l.sales;
+      legacyOption.textContent=l.sales+' (data lama)';
+      salesSelect.appendChild(legacyOption);
+    }
+    salesSelect.value=l.sales||'';
+
+    $('leadSource').value=l.source||'WhatsApp Story';
+    $('leadStatus').value=l.status||'Baru';
+    $('leadFollowUpDate').value=l.followUpDate||'';
+    $('leadLostReason').value=l.lostReason||'';
+    $('leadValue').value=num(l.value);
+    $('leadHpp').value=num(l.hpp);
+    $('leadNotes').value=l.notes||'';
+
+    updateLeadRequirements();
+    $('leadModalTitle').textContent='Edit Lead';
+    $('leadModal').classList.remove('hidden');
+  };
+
+  window.removePromo=async id=>{
+    if(!confirm('Hapus promo ini? Promo yang masih memiliki lead akan ditolak database agar data tidak rusak.'))return;
+
+    try{
+      if(demoMode){
+        promos=promos.filter(p=>p.id!==id);saveDemo();
+      }else{
+        const {error}=await supabaseClient.from('promos').delete().eq('id',id);
+        if(error)throw error;
+        await loadData();
+      }
+    }catch(err){
+      alert('Gagal menghapus promo: '+friendlySupabaseError(err));
+    }
+  };
+
+  window.removeLead=async id=>{
+    if(!confirm('Hapus lead ini?'))return;
+
+    try{
+      if(demoMode){
+        leads=leads.filter(l=>l.id!==id);saveDemo();
+      }else{
+        const {error}=await supabaseClient.from('promo_leads').delete().eq('id',id);
+        if(error)throw error;
+        await loadData();
+      }
+    }catch(err){
+      alert('Gagal menghapus lead: '+friendlySupabaseError(err));
+    }
+  };
+
+  // ==========================
+  // VIEWS
+  // ==========================
+  const viewMeta={
+    dashboard:['Dashboard Promo','Ringkasan performa campaign dan closing.'],
+    promos:['Semua Promo','Kelola campaign dan lihat efektivitasnya.'],
+    leads:['Lead & Closing','Pantau perjalanan prospek sampai closing atau lost.'],
+    reports:['Analisis Bulanan','Evaluasi response rate, conversion, ROAS, sales dan penyebab Lost.']
+  };
+
+  window.setView=v=>{
+    document.querySelectorAll('.view').forEach(x=>x.classList.add('hidden'));
+    $(v+'View').classList.remove('hidden');
+    document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+    $('pageTitle').textContent=viewMeta[v][0];
+    $('pageSubtitle').textContent=viewMeta[v][1];
+  };
+
   document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>setView(b.dataset.view));
-  $('monthFilter').onchange=()=>{renderDashboard();renderPromos();renderLeads();renderReports()};
+  $('monthFilter').onchange=()=>{renderDashboard();renderPromos();renderLeads();renderReports();};
   $('statusFilter').onchange=renderLeads;
 
-  if(firebaseReady){
-    demoMode=false;
-    initFirebase().catch(err=>{
-      console.error('Unexpected Firebase startup error:',err);
-      showLogin();
-      $('loginError').textContent='Startup Firebase gagal: '+friendlyAuthError(err);
-    });
-  }else{
-    demoMode=true;
-    showLogin();
-  }
+  initSupabase();
 </script>
 </body>
 </html>
