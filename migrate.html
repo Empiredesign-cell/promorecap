@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RECAPPROMO Migration — Firebase to Supabase</title>
+<style>
+:root{--bg:#08101f;--panel:#101a2d;--panel2:#15223b;--line:#273a5c;--text:#edf3ff;--muted:#9caecc;--brand:#7596ff;--ok:#59d48b;--bad:#ff7f87}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px Inter,system-ui,Arial;min-height:100vh;display:grid;place-items:center;padding:24px}
+.wrap{width:min(950px,100%);background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:26px;box-shadow:0 35px 100px rgba(0,0,0,.35)}
+h1{margin:0 0 6px;font-size:28px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+.box{background:var(--panel2);border:1px solid var(--line);border-radius:17px;padding:17px}.box h3{margin:0 0 13px}
+label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin:10px 0 6px}
+input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0c1628;color:var(--text);outline:none}
+button{border:0;border-radius:12px;padding:12px 16px;font-weight:850;cursor:pointer}
+.primary{background:linear-gradient(135deg,#668cff,#9a7bff);color:#fff;width:100%;margin-top:20px}
+.primary:disabled{opacity:.5;cursor:not-allowed}.status{margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#0c1628;white-space:pre-wrap;line-height:1.6}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.stat{padding:13px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+.stat b{display:block;font-size:21px;margin-top:5px}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.note{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6}
+@media(max-width:700px){.grid,.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>RECAPPROMO Data Migration</h1>
+  <div class="muted">Firebase Firestore → Supabase PostgreSQL</div>
+
+  <div class="grid">
+    <div class="box">
+      <h3>Firebase Login</h3>
+      <div class="muted">Gunakan akun yang sebelumnya bisa membuka RECAPPROMO Firebase.</div>
+      <label>Email</label><input id="fbEmail" type="email">
+      <label>Password</label><input id="fbPassword" type="password">
+    </div>
+
+    <div class="box">
+      <h3>Supabase Login</h3>
+      <div class="muted">Gunakan user yang sudah dibuat di Supabase Authentication.</div>
+      <label>Email</label><input id="sbEmail" type="email">
+      <label>Password</label><input id="sbPassword" type="password">
+    </div>
+  </div>
+
+  <button id="migrateBtn" class="primary">Mulai Migrasi Data</button>
+
+  <div class="stats">
+    <div class="stat">Promo Firebase<b id="fbPromoCount">0</b></div>
+    <div class="stat">Lead Firebase<b id="fbLeadCount">0</b></div>
+    <div class="stat">Promo Supabase<b id="sbPromoCount">0</b></div>
+    <div class="stat">Lead Supabase<b id="sbLeadCount">0</b></div>
+  </div>
+
+  <div id="status" class="status">Siap. Jalankan migration_patch.sql terlebih dahulu.</div>
+
+  <div class="note">
+    Aman dijalankan ulang: setiap dokumen Firebase disimpan bersama <b>legacy_firebase_id</b>,
+    lalu di-upsert ke Supabase. Jangan tutup halaman selama proses berlangsung.
+    Tidak ada Firebase service-account atau Supabase secret key di file ini.
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+// Firebase project lama RECAPPROMO
+const firebaseConfig = {
+  apiKey: "AIzaSyAC9GHlF2q9emTN0BjQ1MfddFBwDYU1d-c",
+  authDomain: "promorecap.firebaseapp.com",
+  projectId: "promorecap",
+  storageBucket: "promorecap.firebasestorage.app",
+  messagingSenderId: "106400655795",
+  appId: "1:106400655795:web:67f883058cec4776f283c6",
+  measurementId: "G-9F48YS2PBZ"
+};
+
+// Supabase baru RECAPPROMO
+const SUPABASE_URL = "https://qadmythiijtlydvwkaqm.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_AnSLl21BYeNQXhPYW4QzYg_MfohWYa0";
+
+const fbApp = initializeApp(firebaseConfig);
+const fbDb = getFirestore(fbApp);
+const fbAuth = getAuth(fbApp);
+const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+const $ = id => document.getElementById(id);
+const log = (text, kind='') => {
+  $('status').className='status '+kind;
+  $('status').textContent=text;
+};
+const num = v => Number(v || 0);
+
+function isoTimestamp(v){
+  if(!v) return new Date().toISOString();
+  try{
+    if(typeof v.toDate === 'function') return v.toDate().toISOString();
+    if(v.seconds) return new Date(v.seconds*1000).toISOString();
+    const d=new Date(v);
+    return isNaN(d) ? new Date().toISOString() : d.toISOString();
+  }catch{return new Date().toISOString();}
+}
+
+function promoRow(docSnap){
+  const p=docSnap.data();
+  const componentCost=num(p.printCost)+num(p.distributionCost)+num(p.otherCost);
+  return {
+    legacy_firebase_id: docSnap.id,
+    name: p.name || 'Promo Firebase',
+    product: p.product || '-',
+    channel: p.channel || null,
+    start_date: p.startDate || new Date().toISOString().slice(0,10),
+    end_date: p.endDate || p.startDate || new Date().toISOString().slice(0,10),
+    target_lead: num(p.targetLead),
+    target_closing: num(p.targetClosing),
+    printed: num(p.printed),
+    distributed: num(p.distributed),
+    location: p.location || null,
+    audience: p.audience || null,
+    print_cost: num(p.printCost),
+    distribution_cost: num(p.distributionCost),
+    other_cost: num(p.otherCost),
+    cost: componentCost > 0 ? componentCost : num(p.cost),
+    offer: p.offer || null,
+    created_at: isoTimestamp(p.createdAt),
+    updated_at: isoTimestamp(p.updatedAt || p.createdAt)
+  };
+}
+
+function leadRow(docSnap, promoMap){
+  const l=docSnap.data();
+  const oldPromoId=l.promoId || l.promo_id;
+  const newPromoId=promoMap.get(oldPromoId);
+  if(!newPromoId) throw new Error(`Lead ${docSnap.id}: promo Firebase "${oldPromoId}" tidak ditemukan.`);
+  return {
+    legacy_firebase_id: docSnap.id,
+    promo_id: newPromoId,
+    lead_date: l.date || l.leadDate || new Date().toISOString().slice(0,10),
+    invoice_code: l.invoiceCode || null,
+    customer: l.customer || 'Customer Firebase',
+    contact: l.contact || null,
+    customer_type: l.customerType || 'Tidak Diketahui',
+    product_need: l.productNeed || null,
+    sales: l.sales || 'Belum Ditentukan',
+    source: l.source || null,
+    status: l.status || 'Baru',
+    follow_up_date: l.followUpDate || null,
+    lost_reason: l.lostReason || null,
+    order_value: l.status === 'Closing' ? num(l.value) : 0,
+    hpp: l.status === 'Closing' ? num(l.hpp) : 0,
+    notes: l.notes || null,
+    created_at: isoTimestamp(l.createdAt),
+    updated_at: isoTimestamp(l.updatedAt || l.createdAt)
+  };
+}
+
+async function chunkedUpsert(table, rows, chunkSize=100){
+  let total=0;
+  for(let i=0;i<rows.length;i+=chunkSize){
+    const chunk=rows.slice(i,i+chunkSize);
+    const {error}=await sb.from(table)
+      .upsert(chunk,{onConflict:'legacy_firebase_id'});
+    if(error) throw error;
+    total+=chunk.length;
+  }
+  return total;
+}
+
+async function counts(){
+  const [p,l]=await Promise.all([
+    sb.from('promos').select('*',{count:'exact',head:true}),
+    sb.from('promo_leads').select('*',{count:'exact',head:true})
+  ]);
+  $('sbPromoCount').textContent=p.count ?? 0;
+  $('sbLeadCount').textContent=l.count ?? 0;
+}
+
+$('migrateBtn').onclick=async()=>{
+  const btn=$('migrateBtn');
+  btn.disabled=true;
+  try{
+    log('1/7 Login ke Firebase...');
+    await signInWithEmailAndPassword(
+      fbAuth,
+      $('fbEmail').value.trim(),
+      $('fbPassword').value
+    );
+
+    log('2/7 Login ke Supabase...');
+    const {error:authErr}=await sb.auth.signInWithPassword({
+      email:$('sbEmail').value.trim(),
+      password:$('sbPassword').value
+    });
+    if(authErr) throw authErr;
+
+    log('3/7 Membaca collection promos dari Firestore...');
+    const promoSnap=await getDocs(collection(fbDb,'promos'));
+    const promoDocs=promoSnap.docs;
+    $('fbPromoCount').textContent=promoDocs.length;
+
+    const promoRows=promoDocs.map(promoRow);
+    if(promoRows.length){
+      const {error}=await sb.from('promos')
+        .upsert(promoRows,{onConflict:'legacy_firebase_id'});
+      if(error) throw error;
+    }
+
+    log('4/7 Membuat mapping ID Firebase → UUID Supabase...');
+    const {data:sbPromos,error:mapErr}=await sb
+      .from('promos')
+      .select('id,legacy_firebase_id')
+      .not('legacy_firebase_id','is',null);
+    if(mapErr) throw mapErr;
+    const promoMap=new Map((sbPromos||[]).map(r=>[r.legacy_firebase_id,r.id]));
+
+    log('5/7 Membaca collection promoLeads dari Firestore...');
+    const leadSnap=await getDocs(collection(fbDb,'promoLeads'));
+    const leadDocs=leadSnap.docs;
+    $('fbLeadCount').textContent=leadDocs.length;
+
+    const migrated=[];
+    const errors=[];
+    for(const d of leadDocs){
+      try{ migrated.push(leadRow(d,promoMap)); }
+      catch(e){ errors.push(e.message); }
+    }
+
+    log(`6/7 Menulis ${migrated.length} lead ke Supabase...`);
+    if(migrated.length) await chunkedUpsert('promo_leads',migrated,100);
+
+    log('7/7 Validasi jumlah record...');
+    await counts();
+
+    const warning=errors.length
+      ? `\n\nPERINGATAN: ${errors.length} lead tidak dipindahkan:\n${errors.slice(0,20).join('\n')}`
+      : '';
+
+    log(
+      `MIGRASI SELESAI ✅\n\n`+
+      `Promo Firebase : ${promoDocs.length}\n`+
+      `Lead Firebase  : ${leadDocs.length}\n`+
+      `Lead berhasil  : ${migrated.length}`+
+      warning,
+      errors.length ? '' : 'ok'
+    );
+  }catch(e){
+    console.error(e);
+    log(`MIGRASI GAGAL ❌\n\n${e.message || e}`,'bad');
+  }finally{
+    btn.disabled=false;
+  }
+};
+
+counts().catch(()=>{});
+</script>
+</body>
+</html>
